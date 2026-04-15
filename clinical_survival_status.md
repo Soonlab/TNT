@@ -5,7 +5,9 @@
 
 ## Summary
 
-**No disease-free survival (DFS) or overall survival (OS) data are available in the currently curated TNT metadata.** Kaplan-Meier and Cox analyses are therefore not performed in manuscript v0.4 and are flagged as a limitation.
+**No disease-free survival (DFS) or overall survival (OS) data are available in the currently curated TNT metadata.** Kaplan-Meier and Cox analyses are therefore not performed in manuscript v0.5 and are flagged as a limitation.
+
+**Survival data are not yet mature — this is a recently-accrued cohort; DFS/OS analyses are planned for a follow-up report.**
 
 ## Files audited
 

@@ -1,10 +1,10 @@
 # Supplementary — External Validation Meta-Analysis
 
-*Revision v0.4 (Genome Medicine target, 2026-04-15). Moves former main-text Fig 7A–C to supplementary and adds formal meta-analysis framing.*
+*Revision v0.5 (Genome Medicine target, 2026-04-15). Reframed around radiation-phase TNT biology: the discovery cohort sampled only the radiation (first) phase of TNT, and external CRT cohorts differ in CRT regimen and consolidation exposure.*
 
 ## Overview
 
-The TNT-cohort discovery signal (DSB/HDR repair, E2F/MYC cell-cycle, CD8 proliferation up; EMT down in good responders) was tested in **seven public GEO neoadjuvant chemoradiation (nCRT) cohorts, total N = 290** with response annotation. Results are mixed and do **not** reach meta-significance at α = 0.05 in any of the four signatures, which we interpret as evidence of cohort- and TNT-regimen-specific biology rather than a failure of the signature in an identically-treated cohort.
+The TNT-cohort discovery signal (DSB/HDR repair, E2F/MYC cell-cycle, CD8 proliferation up; EMT down in eventual good responders at pre-CRT baseline) was tested in **seven public GEO neoadjuvant chemoradiation (CRT) cohorts, total N = 290** with response annotation. Results are mixed and do **not** reach meta-significance at α = 0.05 in any of the four signatures, which we interpret as evidence of **radiation-phase TNT biology**: external cohorts differ in CRT regimen (short-course vs long-course), fractionation, and whether consolidation chemotherapy followed, which may explain partial reproducibility of a signature discovered in a cohort sampled only across the radiation (first) phase of modern TNT.
 
 ## Cohort composition (7 cohorts, 290 patients)
 
@@ -43,7 +43,7 @@ Three features distinguish the TNT cohort from all seven GEO cohorts and plausib
 2. **Response endpoint.** GEO cohorts mix Dworak TRG, Mandard TRG, pCR, and clinical complete response on watch-and-wait protocols. Our cohort uses surgical-specimen Dworak TRG.
 3. **Platform.** Six of seven public cohorts are 15–20-year-old microarrays with limited dynamic range; the TNT cohort is modern stranded RNA-seq.
 
-We therefore frame the TNT signal as **TNT-regimen-specific biology** to be validated prospectively in a TNT-matched external cohort (e.g. PRODIGE 23, OPRA translational substudies), rather than as a universal chemoradiation-response biomarker.
+We therefore frame the discovery signal as **radiation-phase TNT biology**: external CRT cohorts differ in CRT regimen (short-course vs long-course), fractionation, and whether consolidation chemotherapy followed, which may explain partial reproducibility. Validation should be prospective and TNT-matched (e.g. PRODIGE 23, OPRA translational substudies with paired pre-CRT / post-CRT biopsies and final full-TNT outcome as endpoint), rather than interpreted as a universal chemoradiation-response biomarker.
 
 ## Supplementary figures
 
