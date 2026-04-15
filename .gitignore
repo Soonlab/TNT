@@ -1,0 +1,30 @@
+# Raw data and identifying files
+*.bam
+*.bai
+*.fastq
+*.fastq.gz
+*.fq.gz
+*.vcf
+*.vcf.gz
+*.vcf.gz.tbi
+meta_*.xlsx
+meta.xlsx
+clinical_master.tsv
+
+# Heavy intermediate directories
+02_wes_mutect2/
+11_external_validation/raw/
+11_external_validation/geo_cache/
+
+# Python artifacts
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
