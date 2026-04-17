@@ -1,0 +1,18 @@
+baseline	delta	n_paired	spearman_r	spearman_p	pearson_r	pearson_p	partial_r_resp_adj	partial_p_resp_adj	partial_q_BH
+Tcell_infiltration	MHC_II_delta	12	-0.895	0.0001	-0.796	0.0019	-0.851	0.0005	0.1404
+EMT_Mak	Bcell_infiltration_delta	12	0.804	0.0016	0.618	0.0324	0.827	0.0009	0.1404
+Hypoxia	IGH_n_delta	12	0.343	0.2756	0.472	0.1212	0.753	0.0047	0.429
+EMT_Mak	IGH_n_delta	12	0.545	0.0666	0.561	0.058	0.745	0.0055	0.429
+Epithelial Mesenchymal Transition	IGH_n_delta	12	0.469	0.1245	0.469	0.1238	0.69	0.013	0.6786
+Hypoxia	Treg_delta	12	0.014	0.9656	-0.001	0.9981	0.675	0.016	0.6786
+Epithelial Mesenchymal Transition	Bcell_infiltration_delta	12	0.65	0.022	0.429	0.1636	0.674	0.0161	0.6786
+Tcell_infiltration	Tcell_infiltration_delta	12	-0.678	0.0153	-0.646	0.0233	-0.669	0.0174	0.6786
+Epithelial Mesenchymal Transition	Tcell_infiltration_delta	12	0.517	0.0849	0.327	0.2998	0.656	0.0206	0.7141
+Hypoxia	CD8_exhaustion_delta	12	0.133	0.6806	0.085	0.792	0.638	0.0256	0.7516
+Tcell_infiltration	TLS_Cabrita_delta	12	-0.65	0.022	-0.63	0.0283	-0.635	0.0265	0.7516
+EMT_Mak	Tcell_infiltration_delta	12	0.497	0.1006	0.482	0.1127	0.61	0.0352	0.829
+frac_amp	Bcell_infiltration_delta	12	0.582	0.0469	0.559	0.0588	0.609	0.0355	0.829
+TGF-beta Signaling	SBS5_delta	13	0.624	0.0225	0.433	0.1398	0.581	0.0372	0.829
+DNA Repair R-HSA-73894	Bcell_infiltration_delta	12	0.476	0.1182	0.5	0.0975	0.592	0.0425	0.8482
+TMB_nonsyn_per_Mb	TRB_shannon_delta	12	-0.434	0.1591	-0.622	0.0307	-0.59	0.0435	0.8482
+Tcell_infiltration	CD8_cytotoxic_delta	12	-0.538	0.0709	-0.61	0.0351	-0.578	0.0492	0.8867
