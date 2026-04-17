@@ -1,0 +1,5 @@
+signature	n_total	n_found	pct	missing_genes
+CD8_cytotoxic	17	17	100.0	
+Tcell_infiltration	10	10	100.0	
+Bcell_infiltration	10	9	90.0	CD20
+TLS_Cabrita	7	7	100.0	

@@ -1,0 +1,5 @@
+feature_set	model	n_features_total	outer_AUC	CI_low	CI_high	k_median	C_median
+orig37	LASSO	29	0.6503	0.4542	0.8322	12	0.3
+orig37	ElasticNet	29	0.6863	0.5	0.86	8	0.3
+ext40	LASSO	32	0.6503	0.4542	0.8322	12	0.3
+ext40	ElasticNet	32	0.6863	0.5	0.86	8	0.3
