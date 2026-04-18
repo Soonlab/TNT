@@ -117,3 +117,19 @@ Not yet written. The MANUSCRIPT_DELTA.md (commit c33329f) covers the LASSO impro
 patches (§3.4, etc.). The §3.11 external validation patches needed for the new restricted
 meta + Akiyoshi-augmented CD8 result are summarized above and should be added when v0.7.4
 is drafted.
+
+## Regimen-agnostic baseline predictor — key finding (added 2026-04-18)
+
+Our discovery TNT cohort underwent RT alone in the pre-/post-biopsy window (FOLFOX/CAPOX
+consolidation delivered *after* the post-CRT biopsy); the 518 external patients underwent
+long-course nCRT with capecitabine *concurrent* with RT. The Thread 1 meta reproduces
+across this chemo-timing difference (DSB Z=+3.17, cellcycle Z=+3.21, E2F Z=+2.79, all
+P < 0.01; 4/4 concordant directions), supporting the interpretation that the baseline
+pre-treatment predictor is **regimen-agnostic within multimodal genotoxic therapy** —
+it cannot encode downstream chemo scheduling because it is measured before treatment.
+This also clarifies why GSE119409 (RT-only, no chemo at all) is legitimately discordant:
+the predictor requires the multimodal context, but is otherwise indifferent to when
+chemo meets RT within that context. Detailed rationale and manuscript implications in
+**`REGIMEN_AGNOSTIC_BASELINE.md`**. This finding is incorporated into the v0.7.4 §3.11
+draft (`v0.7.4_section_3.11_external_validation.md`) as an opening design-difference
+paragraph and a closing interpretation paragraph.
