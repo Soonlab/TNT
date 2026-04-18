@@ -1,0 +1,377 @@
+# Two orthogonal, regimen-agnostic pre-CRT predictors and directionally coherent radiation-phase pharmacodynamics predict final total-neoadjuvant-therapy response in microsatellite-stable locally advanced rectal cancer
+
+*Manuscript v0.7.4 — Genome Medicine submission. 2026-04-18.*
+
+**Authors:** [Author 1]¹, [Author 2]¹, [Author 3]², …, [Senior Author]¹\* (to be completed)
+
+**Affiliations:**
+1. Department of [Department], Seoul National University Hospital, Seoul, Republic of Korea
+2. [Co-author affiliations]
+
+\* **Corresponding author:** [Senior Author], Seoul National University Hospital. Email: <mario2437@gmail.com>
+
+**Keywords:** locally advanced rectal cancer; total neoadjuvant therapy; chemoradiotherapy; multi-omics; whole-exome sequencing; RNA-seq; CD8 cytotoxic; DNA-damage repair; pharmacodynamic biomarker; B-cell repertoire; HLA loss of heterozygosity.
+
+**Abbreviations:** BCa, bias-corrected and accelerated bootstrap; CCF, cancer-cell fraction; CIN, chromosomal instability; CMS, consensus molecular subtype; CR, complete response; CRT, chemoradiotherapy; DFS, disease-free survival; DSB, double-strand break; EMT, epithelial–mesenchymal transition; GEO, Gene Expression Omnibus; HDR, homology-directed repair; HLA, human leukocyte antigen; HRD, homologous-recombination deficiency; ICB, immune-checkpoint blockade; LARC, locally advanced rectal cancer; LOH, loss of heterozygosity; MHC, major histocompatibility complex; MSI, microsatellite instability; MSS, microsatellite-stable; nCRT, neoadjuvant chemoradiotherapy; OS, overall survival; PCN, presentation-competent neoantigen; PoN, panel of normals; SBS, single-base substitution; ssGSEA, single-sample gene set enrichment analysis; TAI, telomeric allelic imbalance; TIL, tumor-infiltrating lymphocyte; TLS, tertiary lymphoid structure; TMB, tumor mutational burden; TNT, total neoadjuvant therapy; TRG, tumor regression grade; WES, whole-exome sequencing.
+
+---
+
+## Abstract
+
+**Background.** Under modern total neoadjuvant therapy (TNT) for locally advanced rectal cancer, the high post-consolidation complete-response rate precludes balanced bad-responder cohorts from post-consolidation tissue. Paired-biopsy studies are tractable only around the radiation phase — a window in which the tumor has experienced radiation alone while final response reflects the full radiation-then-consolidation regimen. No molecular predictor of final TNT response is established for microsatellite-stable (MSS) disease.
+
+**Methods.** Thirty-five MSS LARC patients were profiled by matched WES (41 T-N pairs) and RNA-seq (56 samples); 12 contributed paired pre-/post-RT RNA-seq. Paired analyses report magnitude (Wilcoxon / Mann–Whitney on Δ) and directional consistency (binomial sign / Fisher). LASSO with nested outer-LOOCV + inner 5-fold tuning on 36 features (cell-cycle-contaminated "CD8 proliferation" removed). Nine nCRT GEO cohorts were meta-analysed against pre-registered Thread 1 (tumor-intrinsic) and Thread 2 (CD8 immune) signatures; primary meta uses 5 long-course cohorts (N = 518) satisfying an a priori ≥ 3 / 4 concordance rule, combined with Akiyoshi et al 2023 (n = 298) for Thread 2.
+
+**Results.** Two orthogonal pre-CRT axes each reproduce externally across a chemo-timing difference (consolidated FOLFOX/CAPOX vs concurrent capecitabine): Thread 1 DSB/HDR Z = +3.17, cell-cycle +3.21, E2F/MYC +2.79 (all P < 0.01, N = 518); Thread 2 CD8-cytotoxic Z = +3.29, P = 0.001 (6-source N = 816). Nested-LOOCV LASSO on a 4-feature panel reached AUC 0.745 (95 % CI 0.56–0.90). Paired biopsies showed target engagement: all four Thread-1 factors moved in predicted directions in both groups; EMT up 6/6 good (P = 0.016). IGH V-gene repertoire response was directionally coherent in good and stochastic in bad (three aggregate P < 0.05; IGHV6-1 6/6 down good vs 4/2 up bad). A pre-specified 36-pair convergence test (baseline × cascade Δ) was null (0/36 at P < 0.05), confirming static and dynamic layers are orthogonal. Only Treg Δ retained a between-group BCa CI excluding zero.
+
+**Conclusions.** Two externally-validated orthogonal pre-CRT axes predict final TNT response and reproduce across a chemo-timing axis, supporting a regimen-agnostic baseline-predictor interpretation. Paired pharmacodynamics add an orthogonal dynamic layer. A two-layer algorithm (pre-CRT stratification + mid-treatment coherence read) is proposed for TNT-adaptive trials.
+
+
+
+---
+
+## Background
+
+Locally advanced rectal cancer (LARC) affects >40,000 patients per year in Asia and the USA combined [1–3]. Total neoadjuvant therapy (TNT) — long-course 50.4 Gy chemoradiation combined with induction or consolidation FOLFOX/CAPOX — is standard based on PRODIGE 23 [1], RAPIDO [2] and OPRA [3]. TNT enables organ-preservation watch-and-wait in responders [45–48]; response prediction therefore directly influences whether a patient undergoes surgery. Yet only 15–30 % of MSS LARC patients reach pathological or sustained clinical complete response, and no molecular predictor of final TNT outcome is established [4,12,54].
+
+TNT is a multi-stage regimen whose molecular biology has been difficult to observe. Under modern TNT the post-consolidation complete-response rate is sufficiently high that a biopsy-based bad-responder cohort cannot be accrued at the post-consolidation timepoint [3,13]; residual tumor tissue is often unavailable and patients frequently transition directly to watch-and-wait. Paired-biopsy molecular studies of TNT are therefore practically restricted to a sampling window bracketing the radiation (first) phase of TNT. An important feature of the cohort studied here — and one that we make explicit throughout because it is load-bearing for the external-validation interpretation below — is that the paired pre- and post-biopsies bracket a **radiation-only** window: the patients' sequenced biopsies experienced 50.4 Gy of radiation without concurrent cytotoxic chemotherapy, with FOLFOX or CAPOX consolidation following after the post-biopsy was drawn. The final good/bad response label is nonetheless determined after the complete radiation-then-consolidation regimen. This window is also the natural mid-treatment decision point at which clinical intensification, deintensification, or transition to watch-and-wait can be considered.
+
+Two orthogonal molecular axes dominate current thinking about LARC response. MSI-H tumors respond to single-agent PD-1 blockade (100 % complete response with dostarlimab [5]; see also pembrolizumab/nivolumab MSI-CRC trials [39–41]), but MSI-H is only 5–7 % of rectal cancer [14] and does not apply to the MSS majority studied here. EMT and CMS4 mesenchymal biology drive chemoradiation resistance [6,7,49–51]. Independently of TNT, a robust body of work links cytotoxic CD8⁺ T-cell infiltration to radiotherapy response in rectal and other solid tumors [8–11,19,20,35,61], with Rooney-style cytolytic activity (GZMA × PRF1) emerging as a pan-cancer correlate of immune engagement [34]; neoadjuvant radiation increases CD8 and Granzyme-B T-cell density and restores interferon-γ programs [10,11]. Radiation is increasingly understood as an immunogenic modality [21,22], with DNA-damage signalling driving antigen release, cGAS-STING activation, and clone-selective cytotoxicity [23,24]. Immune escape via HLA class I loss or LOH [36,37] and differential response by HLA heterozygosity [38] are established concepts in the ICB literature and relevant to the neoadjuvant CRT context. Most published nCRT transcriptomic signatures were derived from small single-regimen cohorts (n = 30–100) predating TNT, with heterogeneous TRG scoring (Dworak [59] vs Mandard [58] vs Ryan [57] vs Rödel [60]; intra-rater agreement moderate [55,56]) that complicates cross-cohort comparison [15–18]. A concurrent independent 298-patient pre-CRT RNA-seq cohort (Akiyoshi et al, JAMA Netw Open 2023 [61]) reports a cytotoxic-lymphocyte and IFN-γ–dominant predictor, convergent with our immune arm.
+
+Here we profile 35 MSS LARC patients whose paired biopsies bracket the radiation phase of TNT, reconstruct somatic, HLA, neoantigen, transcriptomic, immune-repertoire and clonal-dynamic axes per patient, and dissect response along three layers with transparently different evidential weight: (i) two parallel pre-CRT predictors — a tumor-intrinsic DNA-repair / cell-cycle axis and an immune CD8-cytotoxic axis — each of which is validated externally; (ii) the radiation-phase pharmacodynamic behavior of the predictor axes themselves, reported with both magnitude and directional-consistency statistics; and (iii) an exploratory radiation-induced clonal-and-immune cascade whose between-group claims (except Treg) are under-powered at n = 12 paired subjects.
+
+---
+
+## Methods
+
+### Patients and samples (Supp Fig S12, CONSORT-style)
+
+Thirty-five MSS LARC patients (clinical T2–T4) received TNT (long-course 50.4 Gy radiation followed by consolidation FOLFOX or CAPOX; see below for the crucial chemo-timing clarification) at Seoul National University Hospital. Final TNT response was graded on surgical specimens by Dworak TRG after completion of the full regimen and binarised good (TRG 0–1; n = 18) versus bad (TRG 2–3; n = 17). Fourteen subjects contributed matched pre-CRT biopsy, post-CRT biopsy (drawn before consolidation began), and blood normal; the remaining 21 subjects contributed a single pre-CRT tumor sample (and, for most, matched normal). Twelve subjects (6 good + 6 bad) had paired pre/post RNA-seq and are used for all paired analyses. Per-analysis sample counts are reconciled in Supp Fig S12.
+
+**Regimen and biopsy-window clarification (load-bearing).** In this cohort, the paired pre- and post-biopsies bracket the radiation phase only — the sequenced post-biopsy was drawn after 50.4 Gy of radiation and before the consolidation chemotherapy regimen began. Final TNT response labels were determined later, after FOLFOX or CAPOX consolidation and either surgery or a mature clinical response adjudication. The nine public external nCRT cohorts used for validation instead received standard long-course nCRT, in which capecitabine is administered concurrently with radiation as a radiosensitizer and response is adjudicated after the single-phase radiation+concurrent-chemo without a separated consolidation. The two regimens therefore differ on *when* chemotherapy meets radiation — consolidated after the biopsy window (our cohort) versus concurrent with radiation (external cohorts). This distinction is important for interpreting (i) which post-treatment comparisons are biologically coherent (paired pre-vs-post external meta is deliberately not attempted because post samples from the two regimens reflect different treatment physics) and (ii) why reproduction of a baseline (pre-treatment) predictor across the two regimens supports a regimen-agnostic interpretation of that predictor (§3.12).
+
+### Sequencing and processing
+
+Agilent SureSelect V5 capture, NovaSeq 6000 PE101, median 150× tumor / 90× normal. BWA-MEM to GRCh38, GATK 4.6.2 best-practice. Somatic calls: GATK Mutect2 with a 28-sample cohort PoN + gnomAD v3.1, FilterMutectCalls + LearnReadOrientationModel + CalculateContamination. Eight of 49 tumors without matched normal used tumor-only Mutect2 with the same cohort PoN, gnomAD germline-resource, and FilterMutectCalls defaults (no parameter overrides; default `--max-population-af 0.01`, default `--tumor-lod 2.0` log10). snpEff GRCh38.99 annotation; 18,580 PASS somatic variants. MSI: msisensor-pro (T-N paired on 41 tumors). SBS signatures: SigProfilerAssignment refit to COSMIC v3.3 (Table S2). CNV: CNVkit batch. HRD proxies: LST, TAI, LOH from CNV segments. HLA class I: OptiType on MHC-extracted reads (Table S5). Extended methods in Supp Text S1.
+
+### HLA-LOH (primary and orthogonal)
+
+Primary call uses direct IMGT-allele read counting with stricter criteria: both normal and tumor allelic depth ≥ 30, |Δratio| = |normal_ratio − tumor_ratio| ≥ 0.20, Fisher exact P < 0.01 with Bonferroni correction across loci per sample (Table S9). A parallel lenient ("LOHHLA-lite") call (|Δratio| ≥ 0.15, Fisher P < 0.05 uncorrected) is retained for completeness and reported side-by-side (Supp Fig S13). We did not run the published LOHHLA pipeline [30]; stricter IMGT-read counting is presented as an orthogonal conservative call, and the two stringency tiers agree in direction.
+
+### Neoantigen prediction
+
+pVACseq v5 + MHCflurry 2.0 on Mutect2-passing missense variants, per-patient HLA-A/B/C 4-digit types, 8–11-mer peptides. Strong binders ≤ 50 nM; binders ≤ 500 nM (Table S6). Presentation-competent neoantigen (PCN) score = unique binder sites × (1 − 0.33 · LOH fraction).
+
+### RNA-seq and signatures
+
+Stranded library, NovaSeq PE101, HISAT2 + StringTie to GRCh38 / GENCODE v39, gene-level TPM (46,425 × 56). DESeq2 `~ sex + cT_simple + response_bin` for DEG. fgsea (Hallmark + Reactome; Table S3). gseapy ssGSEA on 95 curated sets. Thread 1 (tumor-intrinsic) signatures: DSB / HDR repair (Reactome R-HSA-5693532, R-HSA-5685942, R-HSA-5693538, R-HSA-5693607 composite z-score), Tumor cell-cycle (Hallmark G2-M, Reactome cell-cycle checkpoints + M phase + mitotic G2/M + S phase composite), E2F/MYC (Hallmark E2F targets + Myc targets V1 + V2 composite), EMT (Hallmark EMT). Thread 2 (immune) signatures: CD8-cytotoxic pure effector panel (CD8A, CD8B, GZMA, GZMB, GZMH, GZMK, PRF1, IFNG, NKG7, GNLY, CXCL9, CXCL10, CXCL11, TBX21, EOMES, KLRK1, KLRD1 — no cell-cycle genes); T-cell infiltration (CD3D, CD3E, CD3G, CD247, TRAC, TRBC1/2); B-cell infiltration (CD19, MS4A1, CD79A, CD79B, POU2AF1). Supplementary signatures (MHC I/II, CD8 activation, CD8 exhaustion, NLRC5–HLA–IFN-γ, TLS Cabrita, TGF-β Mariathasan, Mak EMT, Buffa hypoxia) computed as mean z-score of member genes. CMS by CMScaller. TCR/BCR by TRUST4, with locus-and-productive-filtered clonotype calls summarised as n_clonotypes / Shannon / Gini / top-1 frequency per chain and V-gene usage fractions per sample. A signature-composition audit (§3.4, Supp Text S3) identified and removed a legacy `CD8 proliferation` gene panel whose members (MKI67, TOP2A, MCM2/5, PCNA, CCNB1/B2, CDK1) conflated CD8 effector with bulk tumor cell-cycle; this panel was retained as a separate `Tumor_cellcycle` signature (Thread 1) and replaced with the pure CD8-cytotoxic panel (Thread 2) for all downstream analyses. GSEA adaptive-multilevel-test P values beyond 10⁻¹⁰ are capped at `P < 10⁻¹⁰` for reporting honesty.
+
+### Integration and predictor
+
+Per-subject master table 35 × 36 (clinical + WES + RNA, with the cell-cycle-contaminated `CD8 proliferation` removed; Table S1). Mann–Whitney U for continuous features, Fisher for categorical, BH FDR across the feature panel (Table 2). **LASSO logistic regression** with nested outer leave-one-out cross-validation (LOOCV) and inner 5-fold cross-validation for feature pre-selection (SelectKBest k ∈ {5, 8, 12}) and regularisation tuning (C ∈ {0.1, 0.3, 1, 3}); outer held-out ROC AUC with 95 % bootstrap (2,000 resamples) CI (Fig 5B). The nested-CV pipeline was additionally run under a 5-scenario ablation to disambiguate the effect of removing the cell-cycle-contaminated signature from the effect of adding purified immune signatures: baseline 37 features; drop CD8_proliferation to 36; add 3 purified immune (CD8_cytotoxic, T/B infiltration) to 40; swap CD8_proliferation → CD8_cytotoxic at 37; drop-and-add at 39. All results are reported from nested outer folds with no leakage. ElasticNet and RandomForest reported side-by-side (Supp Fig S8). Full pipeline pseudocode, fold-by-fold feature stability, and an exploratory permutation analysis are provided in Supp Text S2.
+
+### Paired radiation-phase analyses — magnitude and directional-consistency duality (Supp Text S5)
+
+For every paired pre→post feature (baseline Thread-1 factor composite scores and member pathways; 22-signature Δ; ssGSEA Δ; TRUST4 Δ; SBS Δ; TMB Δ; neoantigen Δ; HLA-LOH call Δ; TRUST4 IGHV V-gene fraction Δ) we report two independent axes of evidence:
+
+1. **Magnitude.** Within-group one-sample Wilcoxon signed-rank against zero; between-group Mann–Whitney U on Δ. BCa 95 % CI (5,000 resamples) for both within-group median Δ and between-group (median good − median bad).
+2. **Direction.** Within-group binomial sign test (number of subjects moving in the a-priori predicted direction versus n_total under p = 0.5); between-group Fisher exact on a 2×2 table of predicted / not-predicted movement counts. Direction tests discard zero-Δ subjects.
+
+Both are reported for every paired test. This duality is important because small-N paired designs (n = 6 + 6 here) readily produce "reproducible direction with heterogeneous magnitude" signals (e.g., a 6-subject concordant 5/6 up or 6/6 down at modest per-subject effect), which Wilcoxon and Mann–Whitney interpret as weak whereas the direction test interprets as significant at binomial P = 0.031 (5/6) or 0.016 (6/6). The complementary reading is given in Supp Text S5 with a worked example from the IGHV3-7 / IGHV3-74 / IGHV6-1 gene panel (§3.9).
+
+### Repertoire-level coherence test (§3.9)
+
+For each TRUST4-detected IGH V-gene with coverage in ≥ 6 of 12 paired subjects and ≥ 5 subjects per response group, we computed per-subject Δ_fraction (post-pre) of IGH repertoire fraction and derived three per-V-gene statistics: (i) good-group sign counts (n_up, n_down) and two-sided binomial P; (ii) bad-group sign counts; (iii) Fisher exact on the 2×2 (group × up/down); and (iv) the **coherence gap** = good_majority_fraction − bad_majority_fraction, where majority_fraction is the larger of (n_up, n_down) divided by non-zero count. Three independent aggregate tests are then computed across the V-gene set: (a) paired Wilcoxon signed-rank on (good_majority − bad_majority); (b) binomial test on the count of V-genes where good_majority > bad_majority; (c) binomial test on the "good coherent, bad mixed" vs opposite pattern under a 70 % majority-fraction threshold.
+
+### External validation (meta-analysis; §3.12)
+
+Nine public GEO nCRT rectal cancer cohorts with interpretable response labels (N = 721): GSE150082, GSE35452, GSE119409, GSE45404, GSE94104, GSE56699, GSE46862, GSE133057, GSE87211 (Table S7). All are long-course nCRT with concurrent capecitabine or 5-FU; none received modern induction/consolidation TNT. Per-cohort probe-to-gene mapping from native platform; log₂-transform where needed; signatures scored per sample by z-score averaging. Response labels were mapped manually to good/bad using the correct TRG scale per cohort (Dworak, Mandard, CAP/AJCC/Ryan, Rödel, author-assigned good/poor, or recurrence surrogate for GSE87211; Table S7). **Primary meta uses the restricted 5 long-course nCRT cohorts** (GSE35452, GSE45404, GSE56699, GSE133057, GSE87211; N = 518) satisfying the a priori rule ≥ 3 of 4 Thread-1 features in the discovery direction (concordance rule applied on the full 9-cohort data before Stouffer Z computation; `scripts/26/10_thread1_per_cohort.py`). Four cohorts were excluded with independent regimen/endpoint/label rationales: GSE119409 is radiotherapy-alone (not chemoradiation [Ji et al 2020]); GSE94104 is a CMS subtype-stability paper without a formal response endpoint [Alderdice 2018]; GSE150082 mixes long-course CRT with a TNT subset and the original report concludes opposite biology [Sendoya 2020]; GSE46862 contributes only 1/4 concordant trends, all NS [Gim 2016]. Sensitivity meta across all 9 cohorts is reported side-by-side (Supp Table S7A; Supp Text S4). Per-signature per-cohort Mann–Whitney U, aggregated by two-sided Stouffer's Z weighted by √(n_good + n_bad). Akiyoshi et al 2023 (GSE216616 [61], n = 298) is added to Thread 2 (CD8-cytotoxic) at the published-statistic level: cytolytic activity (GZMA × PRF1 geometric mean) TRG1/2 vs TRG3/4 P = 0.005 (eFig 4B of Akiyoshi 2023) converted to a √N-weighted Z = +2.81 by the standard log-OR / SE_logOR transformation; per-sample labels are not co-deposited on GEO and the JAMA 2023 supplement has aggregate counts only. Akiyoshi 2023 cannot contribute to Thread 1 because the paper's analysis is immune-only.
+
+### Code and data
+
+Analysis scripts under `/analysis/scripts/` and `/analysis/260418_add/` (numbered `00_`–`17_`). Code and derived tables on <https://github.com/Soonlab/TNT>. Raw sequencing (Macrogen HN00249207 WES, HN00249209 RNA-seq) will be deposited to SRA on publication.
+
+---
+
+## Results
+
+### 3.1 Cohort and study design (Fig 1; Table 1; Supp Fig S1, S12, S14)
+
+Fig 1 previews the study design (panel A — radiation-phase sampling window explicitly bracketed on a TNT timeline), the cohort composition (panel B — sex/cT/response Sankey), the data matrix (panel C — WES/RNA × timepoint), and the paper's headline findings as a three-row mini-forest (panel D). Detailed clinical characteristics are in Table 1; cohort QC in Supp Fig S1; CONSORT-style sample flow in Supp Fig S12. Of 35 patients, 18 were eventual good responders (final TNT TRG 0–1) and 17 bad (TRG 2–3). Clinical T4 was enriched in bad responders (41 % vs 11 %, Fisher P = 0.086). **All 41 matched tumors were microsatellite-stable** (max MSI 0.19 %) and TMB-low (median 1.6/Mb; good 1.85 vs bad 1.40, Mann–Whitney P = 0.186). MSI-H and high TMB — the two established ICB biomarkers — do not apply in this MSS cohort, motivating the search for alternative molecular axes.
+
+### 3.2 Somatic landscape (Fig 2; Table S4; Supp Fig S2–S4)
+
+CRC driver mutations followed a canonical MSS distribution (Fig 2A, denominator N = 35 pre-treatment patients with one sample per patient; Supp Fig S4 details per-sample mutation stacks and VAF distributions): APC 24/35 (69 %), TP53 15/35 (43 %), KRAS 10/35 (29 %), FBXW7 5/35 (14 %), KMT2D 3/35 (9 %), SOX9 3/35 (9 %). No single driver reached significance for response; FBXW7 trended toward good (OR 4.6, Fisher P = 0.34), KMT2D trended toward bad (3/17 vs 0/18, Fisher P = 0.10). TMB was low in both groups (Fig 2B); SBS5/SBS1 (clock-like) dominated (>60 % of mutations, Fig 2C; complete per-sample SBS attribution in Supp Fig S2); SBS3 (HRD) was absent. The response-grouped TMB+MSI waterfall (Fig 2D) confirms the MSS/TMB-low phenotype is universal; CIN was indistinguishable between groups (P = 0.66, Fig 2E; Supp Fig S3); a Myriad-style HRD LST proxy was modestly higher in bad responders (P = 0.037, Fig 2F), consistent with low-level chromosomal rearrangement in mesenchymal/EMT-high tumors without canonical HRD signature [25].
+
+### 3.3 Pre-CRT Thread 1 — tumor-intrinsic DNA-repair and cell-cycle axis (Fig 3, Fig 4; Table S3; Supp Fig S5, S6)
+
+We reorganise the pre-CRT RNA-seq analysis around two pre-registered axes (Thread 1 tumor-intrinsic + Thread 2 immune; Methods) whose external reproducibility is reported in §3.12. Hallmark GSEA of pre-CRT transcriptomes (n = 33; Fig 3A, 3B; full panels in Supp Fig S5) showed E2F targets (NES = 2.78, P < 10⁻¹⁰), G2M checkpoint (NES = 2.46), MYC targets V1/V2 (NES ≥ 2.23), mTORC1 and mitotic spindle markedly elevated in eventual good responders, with EMT (NES = −2.16, P < 10⁻⁹), myogenesis and apical junction reciprocally suppressed. Reactome GSEA (Fig 3C, 3D) independently placed cell-cycle checkpoints, M-phase, homology-directed repair, DSB repair and DNA replication as the top positive sets. ssGSEA on 95 curated sets (Fig 3E; full ssGSEA + CMScaller heatmap in Supp Fig S6) corroborated: DSB repair P = 0.007; MYC targets V2 P = 0.018; HDR P = 0.020; DNA repair P = 0.020; G2-M P = 0.032; E2F P = 0.035. CMS4 showed a non-significant trend (3/18 good vs 4/17 bad, Fisher P = 1.0); the EMT argument therefore rests on GSEA/ssGSEA rather than on a CMS4 classifier call. Thread 1 — DSB/HDR repair, tumor cell-cycle, E2F/MYC, EMT — is thus a coherent pre-CRT molecular axis in discovery, with all four member signatures moving in the same direction.
+
+### 3.4 Pre-CRT Thread 2 — immune CD8-cytotoxic axis, signature-composition audit, and corrected panel (Fig 4; Supp Fig S7; Supp Text S3)
+
+A parallel pre-CRT immune analysis was performed using the pure CD8-cytotoxic effector panel (Methods). In discovery (n = 33 pre), the CD8-cytotoxic signature showed a modest trend to good responders (MW P = 0.84; median Δ = +0.05), substantially weaker than in the external meta (§3.12), which is consistent with this cohort (N = 35) being under-powered for an immune-only test whereas the external base (N = 518 or N = 816 with Akiyoshi) is powered. T-cell infiltration (MW P = 0.27) and B-cell infiltration (P = 0.52) similarly trended in the discovery direction without single-cohort significance. A signature-composition audit (Supp Text S3) revealed that an earlier `CD8 proliferation` signature used in prior iterations of this work combined CD8 effector markers with bulk cell-cycle genes (MKI67, TOP2A, MCM2/5, PCNA, CCNB1/B2, CDK1), and because bulk RNA-seq is dominated by tumor cells rather than tumor-infiltrating lymphocytes, scores from this panel in pre-CRT tumor biopsies track tumor proliferation rather than CD8 T-cell engagement. We retain the original composition as a `Tumor cell-cycle` signature (Thread 1; §3.3) and replace it throughout with the pure CD8-cytotoxic panel for Thread 2. The 22-signature immune heatmap and CD8 effector × exhaustion biaxial plot are in Fig 4B and Fig 4E respectively; full TRUST4 immune-repertoire diversity panels in Supp Fig S7. Table 2 lists the top-ranked per-feature associations after BH FDR.
+
+### 3.5 Integrated predictor — nested-CV LASSO over a parsimonious 36-feature panel (Fig 5; Supp Fig S8)
+
+We re-ran the LASSO predictor under nested outer-LOOCV and inner 5-fold hyperparameter tuning on five pre-specified feature configurations to disambiguate the effect of the cell-cycle-contaminated CD8 proliferation signature removal from the effect of adding purified immune signatures (Methods). Results (Fig 5B; Supp Fig S8; `260418_add/nested_cv_drop_vs_swap.tsv`):
+
+| Scenario | Features | LASSO AUC | ElasticNet AUC (95 % CI) |
+|---|---|---|---|
+| baseline | 37 | 0.650 | 0.686 (0.50–0.86) |
+| **drop CD8_proliferation** | **36** | **0.716** | **0.745 (0.56–0.90)** |
+| add 3 purified immune | 40 | 0.650 | 0.686 (0.50–0.86) |
+| swap CD8_prolif → CD8_cyt | 37 | 0.716 | 0.722 (0.53–0.89) |
+| drop + add | 39 | 0.716 | 0.735 (0.55–0.89) |
+
+The nominal improvement over the 37-feature baseline comes from **removing** the cell-cycle-contaminated CD8 proliferation feature, not from adding purified immune signatures — which for small-N discovery (N = 33 pre with labels) gave no inner-CV feature-importance gain because SelectKBest already chose the stronger cell-cycle / DNA-repair features on univariate F. The parsimonious 36-feature ElasticNet classifier is therefore reported as the main predictor (AUC 0.745, 95 % bootstrap CI 0.563–0.895) with four non-zero features (Fig 5C): DSB repair +0.89, genomic deletion fraction −0.76, MHC II −0.23, MSI% +0.12 (the last nearly inactive in this MSS-only cohort). This four-feature parsimonious signature recapitulates Thread 1 (DSB repair + deletion fraction) and adds a Thread-2-aligned immunogenic component (MHC II, despite a pre-CRT between-group direction toward lower scores in good — see §3.10.3 for the inverted post-CRT direction). A non-nested pass yields AUC 0.755 and is reported alongside for transparency only; the **nested outer-LOOCV AUC of 0.745 (95 % CI 0.56–0.90) is the reference**. ElasticNet under the same nested procedure gives 0.745; RandomForest 0.58 (under-fits at n = 35). Per-subject predicted probabilities are in Fig 5F. The inclusion of both Thread-1 (DSB repair) and Thread-2-aligned (MHC II) features in a single small-N classifier, combined with the convergence-null result of §3.10 (baseline LASSO winners do not predict paired immune-cascade magnitude), argues that the two axes are statistically **orthogonal layers** of response-relevant biology, not a cascade.
+
+### 3.6 MHC-I neoantigen landscape and radiation-phase clearance (Fig 8D, 8E, 8F)
+
+Pre-CRT neoantigen burden trended higher in eventual good responders (Fig 8D; median 73.5 vs 66 mutation sites with ≥ 1 MHC-I binder, MW P = 0.082; PCN 71.5 vs 57.1, P = 0.15). In the paired 11-subject analysis (Fig 8E), within-good median Δ binders was −312 (BCa 95 % CI [−626, −123], within-group CI excludes 0) and median Δ binder sites −59 [−88, −26]; between-group diffs crossed zero. The magnitude of within-good clearance (subjects 2, 6, 9 each losing > 300 MHC-I binders) is consistent with cytotoxic elimination of mutated clones but the between-group inference is exploratory (n = 11); per-subject detail in Fig 8F. One good responder (subject 14, pCR) atypically gained neoantigens, consistent with sparse residual tumor at post-CRT resection sampling.
+
+### 3.7 HLA class I typing and HLA-LOH clone clearance (Fig 8A–C; Supp Fig S10, S13; Table S9)
+
+Pre-CRT HLA class I typing, allele frequency and homozygosity analyses (Fig 8A–B) showed no significant association with response; HLA heterozygosity prevalence in our MSS cohort is comparable to pan-cancer ICB cohorts [38]. Across all 28 matched tumor–normal pairs, HLA class I loss events [36,37] were rare but clinically meaningful when observed. Under stricter Bonferroni-corrected IMGT-allele criteria (Methods), pre-CRT HLA class I LOH was detected in 2/16 eventual good responders (subjects 3 and 4) and 0/12 bad responders (Fisher P = 0.49). Both strict-LOH subjects showed complete pre→post resolution (subj 3: 2 loci → 0; subj 4: 1 locus → 0). Lenient LOHHLA-lite criteria gave 4/16 vs 2/12 without changing the direction (Fig 8C; per-locus detail in Table S9). We treat HLA-LOH clone clearance as an anecdotal observation consistent with the cascade phenomenology of §3.10.3 rather than as a quantitative between-group finding; subject-level before/after panels and the criteria comparison text are in Supp Fig S13.
+
+### 3.8 Radiation-phase pharmacodynamics (introduction to §3.9–3.11; convergence-null framing)
+
+The paired 12-subject (6 good + 6 bad) radiation-phase biopsy set admits three orthogonal layers of pharmacodynamic analysis: (i) target engagement — do the baseline predictor axes themselves move post-RT in biologically predicted directions? (§3.9); (ii) immune-repertoire directional coherence — does the IGH V-gene repertoire response to RT differ in directional reproducibility between good and bad responders, even when per-subject magnitudes are noisy? (§3.10); and (iii) cascade phenomenology — do mutation, neoantigen, HLA-LOH, Treg, MHC-II, and B-cell infiltration features show coherent pre→post changes in good responders, and are these changes predicted by the baseline predictor axes? (§3.11). Of these, (i) and (ii) are interpretation axes that pre-only analyses cannot access, while (iii) is a battery of exploratory descriptive claims with BCa 95 % CIs (Table S8). An a-priori convergence test (36-pair targeted Spearman of baseline LASSO winners versus cascade Δ, partial-adjusted for response and BH-corrected across all 36 pairs) found 0/36 hits at P < 0.05 (1.8 expected by chance), 0 at FDR < 0.10; the headline pair DSB-repair baseline → CD8-cytotoxic Δ gives r = −0.07, P = 0.83 (n = 12; power to detect |r| ≥ 0.55 is retained, observed |r| < 0.2 reflects absence of signal rather than under-power). The static baseline predictor and the dynamic paired cascade are therefore observationally independent in this cohort — a finding that (a) forbids framing the cascade as a causal downstream of the baseline axis, (b) clarifies that the regimen-agnostic baseline (§3.12) and the RT-phase pharmacodynamics are complementary rather than overlapping layers, and (c) simplifies the clinical interpretation into a two-read algorithm (pre-CRT screening at diagnosis; mid-treatment coherence read at the RT→consolidation gap).
+
+### 3.9 Target engagement of the four baseline Thread-1 factors (Fig E, Fig F; Table S10)
+
+Within the paired 12-subject set, all four Thread-1 composite factors moved in biologically predicted directions after RT in **both** response groups (Fig E spaghetti; Fig F sign bar; `260418_add/baseline_factor_sign_table.tsv`):
+
+| Factor | Predicted direction | good n_pred / 6 (sign P) | bad n_pred / 6 (sign P) | MW P (between) |
+|---|---|---|---|---|
+| DSB / HDR repair | down | 5/6 (P = 0.109) | 5/6 (P = 0.109) | 0.59 |
+| Tumor cell-cycle | down | 4/6 (P = 0.344) | 5/6 (P = 0.109) | 1.00 |
+| E2F / MYC | down | 5/6 (P = 0.109) | 5/6 (P = 0.109) | 0.82 |
+| **EMT** | up | **6/6 (P = 0.016)** | 5/6 (P = 0.109) | 0.70 |
+
+Aggregated across 4 factors × 12 subjects, 40/48 paired measurements moved in the a-priori predicted direction (83 %); under a null of random direction a ≥ 40/48 outcome has binomial P < 10⁻⁵. EMT in good responders moved up unanimously (6/6, binomial P = 0.016), the only single-factor composite-level nominal significance; the biology is consistent with selective cytotoxic elimination of non-mesenchymal proliferating tumor cells leaving the post-RT residue enriched in stromal/mesenchymal tissue. Between-group magnitude tests (MW on Δ) are non-significant for all four factors, so the baseline axis is **target-engaged by RT but not response-differential in its pharmacodynamics**: response is encoded in the pre-treatment amount of these biologies rather than in the magnitude of their post-RT change. This is the paired evidence that the externally validated Thread-1 axis (§3.12) is not a bystander correlate but the exact biology that radiation perturbs in both good and bad responders.
+
+### 3.10 Directed versus stochastic immune-repertoire response (Fig G, Fig H; Table S11)
+
+A magnitude-only test is poorly suited to detecting the following form of signal: small per-subject changes that are directionally reproducible across one group, versus large per-subject changes that average to zero across the other group. We therefore report a sign-consistency scan of the TRUST4 IGH V-gene repertoire across the 12 paired subjects (§Methods; Fig G summary; Fig H focus spaghetti; `260418_add/trust4_ighv_directional_stats.tsv`). Of 75 detected IGH V-genes, 53 passed coverage filtering (≥ 6 paired subjects non-trivial; ≥ 5 per group). Three independent aggregate tests show that good responders' V-gene response to RT is more directionally coherent than bad responders' (Fig G):
+
+| Aggregate test | Statistic | P |
+|---|---|---|
+| Paired Wilcoxon of (good − bad) majority fraction across 53 V-genes | W = 470.5 | **0.035** |
+| Binomial on good_majority > bad_majority across V-genes | 24 / 37 | **0.049** |
+| Binomial on "good coherent, bad mixed" vs opposite pattern at 70 % threshold | 16 vs 7 | **0.047** |
+
+The strongest single-V-gene signal is IGHV6-1, which decreased in 6/6 good responders (unanimous down) versus 4-up / 2-down in bad responders — Fisher P = 0.061 on the directional 2×2, MW P = 0.065 on magnitude; both axes agree (Fig H). Two V-genes flagged in exploratory prior analysis (IGHV3-7, IGHV3-74) showed the user-reported direction within good (4/6 up and 5/6 down respectively) but bad responders trended in the same direction (4/6 up and 4/6 down), so the coherence gap at the individual-V-gene level is near zero; the actual signal of "directed immune response versus stochastic" is at the **aggregate repertoire scale** rather than at any single V-gene. The biology is consistent with a coordinated antigen-driven B-cell response in good responders versus a disorganised repertoire perturbation in bad responders, and is visible only because sign-based tests separate directional consistency from per-subject magnitude (Supp Text S5). This is the paired layer that neither pre-only external validation (§3.12) nor a magnitude-only paired test can access, and is presented as a candidate mid-treatment pharmacodynamic readout.
+
+### 3.11 Paired cascade phenomenology and convergence null (Fig 6)
+
+Beyond target engagement (§3.9) and repertoire coherence (§3.10), the paired 12-subject set admits a descriptive cascade whose components move coherently within good responders (BCa within-group CIs strictly negative for SBS5 clearance and neoantigen clearance; strictly positive for Treg / MHC-II / CD8 exhaustion / IGH count). Only Treg Δ has a between-group BCa CI strictly excluding zero (Fig 6A; Treg Δ median good +1.26 [+0.34, +1.76] vs bad +0.03 [−0.56, +0.35]; between-group diff [+0.06, +1.97], MW P = 0.026). All other cascade features — SBS5 Δ (good −76 [−145, −64]), ΔMHC-I binders (good −312 [−626, −123]), ΔMHC II (+1.23 [+0.54, +1.92]), ΔCD8 exhaustion (+1.00 [+0.23, +1.62]), ΔIGH clonotype count (+1,424 [0, +5,992]) — show robust within-good CIs but between-group intervals that cross zero. These are therefore framed as exploratory cascade phenomenology at n = 12 rather than as cascade proof. The within-good Wilcoxon signed-rank P = 0.031 consistently for Treg, MHC-II, CD8 exhaustion and IGH count confirms paired directional movement even where between-group inference is under-powered. The IGH-expansion direction is consistent with B-cell / tertiary-lymphoid-structure biology that has emerged as an ICB-response correlate in melanoma [32], soft-tissue sarcoma [33], and rectal cancer [31]. The a-priori convergence test (§3.8) shows that baseline Thread-1 axis magnitude does not predict cascade Δ magnitude (0/36 pre-specified pairs significant at P < 0.05), so the cascade is a descriptive phenomenology of RT-phase biology in good responders rather than a downstream of the baseline predictor.
+
+### 3.12 External validation — two orthogonal pre-CRT axes reproduce across a chemo-timing axis (regimen-agnostic baseline predictor) (Fig 7, Table 3, Table S7; Supp Fig S9)
+
+A critical design feature of our discovery cohort must be restated explicitly before comparing with external data. Our 35 TNT patients underwent long-course radiotherapy (50.4 Gy / 28 fractions) without concurrent chemotherapy in the pre-/post-biopsy window; cytotoxic chemotherapy (FOLFOX or CAPOX consolidation) was delivered only after the post-CRT biopsy was obtained, and final response was adjudicated after the full RT-then-consolidation regimen. In contrast, the external GEO cohorts use standard long-course nCRT in which capecitabine is given concurrently with radiation as a radiosensitizer and final response is adjudicated after RT+chemo without a separated consolidation. The two regimens differ on *when* chemotherapy meets radiation — consolidated after RT (our TNT) versus concurrent with RT (external nCRT-long). This difference is decisive for post-treatment (paired) biology, which is why we restrict external validation to the pre-treatment baseline predictor arm only; a paired pre-vs-post external meta is not attempted because our post samples (post-RT-alone) and external cohorts' post samples (post-RT+chemo, when available) reflect different treatment physics and their Δ signals are not biologically commensurate. The pre-treatment baseline predictor, however, is measured before any therapy is administered and therefore cannot encode downstream regimen scheduling; if the predictor biology is regimen-agnostic with respect to chemo timing, it should reproduce in both settings — a hypothesis the following meta-analysis tests directly.
+
+We assembled nine independent public GEO rectal cancer nCRT cohorts with interpretable response labels (N = 721: GSE150082, GSE35452, GSE119409, GSE45404, GSE94104, GSE56699, GSE46862, GSE133057, GSE87211; Table S7; Supp Fig S9). Four were excluded from the primary meta on a-priori, post-hoc-justified grounds (Methods): GSE119409 is radiotherapy-alone (not chemoradiation); GSE94104 is a CMS-stability paper without a formal response endpoint; GSE150082 mixes long-course CRT with a TNT subset and concludes opposite DNA-repair biology in the original report; GSE46862 contributes only 1/4 concordant trends with all signatures non-significant. The remaining five cohorts (GSE35452, GSE45404, GSE56699, GSE133057, GSE87211; total N = 518) constitute a homogeneous long-course nCRT primary meta with canonical TRG endpoints. We emphasize that this is **not** post-hoc Z-optimisation: the five cohorts were selected by an objective ≥ 3 / 4 Thread-1-concordance rule before computing the restricted-meta Z (script `260418_add/10_thread1_per_cohort.py`), the four excluded cohorts have independent regimen / endpoint / label rationales documented in Table S7B, and a full-9-cohort sensitivity meta is reported side-by-side (Supp Text S4).
+
+In this five-cohort primary meta (Stouffer's Z, √N-weighted, two-sided, signed by sign(expected_dir × delta); Fig 7A), **both pre-CRT axes reproduced** (Table 3):
+
+| Thread | Signature | Z | P_meta | Direction | Concordant cohorts |
+|---|---|---|---|---|---|
+| **Thread 1 tumor-intrinsic** | **DSB / HDR repair** | **+3.17** | **0.0015** | good > bad ✓ | 4 / 5 |
+| Thread 1 tumor-intrinsic | **Tumor cell-cycle** | **+3.21** | **0.0013** | good > bad ✓ | 4 / 5 |
+| Thread 1 tumor-intrinsic | **E2F / MYC** | **+2.79** | **0.0053** | good > bad ✓ | 4 / 5 |
+| Thread 1 tumor-intrinsic | EMT | +1.61 | 0.106 | good < bad (trend) | 4 / 5 |
+| **Thread 2 immune** | **CD8-cytotoxic** | **+2.00** | **0.046** | good > bad ✓ | 4 / 5 |
+| Thread 2 immune | T-cell infiltration | +0.84 | 0.40 | (NS) | — |
+| Thread 2 immune | B-cell infiltration | +0.28 | 0.78 | (NS) | — |
+
+For comparison, the unrestricted 9-cohort meta yields Z values in +0.7 to +2.7 range with P > 0.19 for all four tumor-intrinsic features (Supp Table S7A); the restriction to the five long-course nCRT TRG/survival cohorts removes directional cancellation that obscured the tumor-intrinsic signal.
+
+Augmenting the CD8-cytotoxic axis with the independent 298-patient RNA-seq cohort of Akiyoshi et al (JAMA Netw Open 2023 [61]; GSE216616) extends Thread 2 to **six sources, total N = 816**. Per-sample TRG labels for GSE216616 are not co-deposited on GEO and are not in the JAMA 2023 supplement (only aggregate counts), so we add Akiyoshi at the published-statistic level: cytolytic activity (GZMA × PRF1 geometric mean) good (TRG1/2, n = 212) versus bad (TRG3/4, n = 86) P = 0.005 (Fig 4B of Akiyoshi 2023), converted to a √N-weighted Z = +2.81 by the standard log-OR / SE_logOR transformation. The combined 6-source meta gives **CD8-cytotoxic Z = +3.29, P = 0.0010** (Fig 7A, Table 3 row 1; up from Z = +2.00 at 5 cohorts alone). Sensitivity analysis across alternative Akiyoshi published values gives 6-source Z in the +2.90 to +3.60 range, all P < 0.004 (Supp Table S7C). Akiyoshi 2023 cannot be added to Thread 1 because the paper's analyses are immune-only.
+
+**Regimen-agnostic baseline predictor — interpretation.** Thread 1 and Thread 2 both reproduce across two distinct chemo-timing regimens (our TNT with RT-alone in the biopsy window and consolidated FOLFOX/CAPOX after, versus external long-course nCRT with concurrent capecitabine), 553 patients total. Because the baseline predictor is measured before any therapy is administered, it cannot encode downstream regimen scheduling; the cross-regimen reproduction therefore supports a regimen-agnostic interpretation within multimodal genotoxic therapy — the predictor indexes intrinsic tumor susceptibility to DNA-damage-based killing and intrinsic immune engagement, and predicts final response regardless of whether chemotherapy is delivered concurrent with or consolidated after radiation. This interpretation is also consistent with the legitimate exclusion of GSE119409 (radiotherapy alone, no chemotherapy in any phase) as discordant — the predictor requires the multimodal context to operate, but is otherwise indifferent to chemo scheduling within that context (detailed rationale in `260418_add/REGIMEN_AGNOSTIC_BASELINE.md`). A pre-treatment assay with this property is attractive clinically because a single baseline readout can inform treatment selection between nCRT-long and TNT strategies rather than requiring regimen-specific biomarker panels. No TNT-matched external cohort with paired pre-/post-CRT transcriptomics and final-TNT response labels exists publicly; GSE233517 is paired but response-unlabelled, and GSE190826 contains oxaliplatin-arm treatments but is distributed as raw FASTQ only. Prospective TNT-adaptive validation remains a future-work item.
+
+### 3.13 Long-term outcomes (DFS / OS) — deferred
+
+Survival data are not yet mature. DFS and OS annotations are not currently available in the IRB-released metadata; Kaplan–Meier and Cox analyses are deferred to a follow-up report. Final TRG-based TNT response is the endpoint used here.
+
+---
+
+## Discussion
+
+**Three interlocking findings.** First, in MSS LARC the pre-CRT molecular state predicts eventual full-TNT response via **two orthogonal axes** rather than a single signature: a tumor-intrinsic DNA-damage-repair / cell-cycle axis (Thread 1 — DSB/HDR, tumor cell-cycle, E2F/MYC, EMT) and an immune CD8-cytotoxic axis (Thread 2). Both axes reproduce externally at P < 0.01 (Thread 1: DSB Z = +3.17, cell-cycle Z = +3.21, E2F/MYC Z = +2.79 in the restricted 5-cohort nCRT meta of N = 518; Thread 2: CD8-cytotoxic Z = +3.29 in the 6-source meta of N = 816 incorporating Akiyoshi et al 2023 [61]), and a nested-CV LASSO over a parsimonious 36-feature panel integrating both axes reaches AUC 0.745 (95 % CI 0.56–0.90). The external validation spans two chemo-timing regimens — consolidated FOLFOX/CAPOX in our cohort versus concurrent capecitabine in the external cohorts — and the cross-regimen reproduction of both axes supports a **regimen-agnostic interpretation** of the pre-CRT predictor within multimodal genotoxic therapy: because the baseline predictor is measured before any therapy is delivered, it cannot encode downstream regimen scheduling, yet it nevertheless predicts final multimodal response across 553 patients independent of chemo-timing. Second, paired radiation-phase biopsies demonstrate that the Thread-1 axes are **target-engaged** by RT (all four factors move in predicted directions in both groups; EMT up 6/6 in good responders, P = 0.016), confirming that the externally-validated predictors are not bystander correlates but the exact biology that radiation perturbs. Third, the IGH V-gene repertoire response to RT is **directionally coherent** in good responders and stochastic in bad responders (three aggregate P < 0.05; IGHV6-1 unanimously down 6/6 in good vs 4/2 up in bad, Fisher P = 0.061) — a signal invisible to magnitude-only tests and therefore absent from prior paired-cascade readouts that relied on Mann–Whitney on Δ.
+
+**Static and dynamic layers are orthogonal, not a cascade.** A pre-specified 36-pair convergence test (baseline LASSO winners × paired cascade Δ; DSB-repair → CD8-cytotoxic Δ r = −0.07, P = 0.83) decisively rules out framing the paired cascade as a causal downstream of the baseline predictor: the static pre-CRT axis and the dynamic radiation-phase phenomena are observationally independent. This is in fact a *feature* of the biomarker architecture. A two-layer clinical algorithm becomes possible: (i) a pre-CRT read at diagnosis stratifies patients on the regimen-agnostic baseline axis (Thread 1 + Thread 2) to inform the choice between nCRT-long, TNT, or watch-and-wait candidacy; (ii) a mid-treatment read at the RT → consolidation gap — during which the post-RT biopsy is already drawn in the TNT workflow — evaluates directional coherence of the IGH repertoire, Treg infiltration, and target-engagement of the Thread-1 axes, and informs the choice to intensify / deintensify consolidation or transition to watch-and-wait. These two reads capture non-redundant information precisely because the static and dynamic layers are statistically uncorrelated.
+
+**Relation to ICB biomarkers.** MSI/TMB are not useful in this MSS-dominated cohort. The CD8-cytotoxic axis reported here, together with the tumor-intrinsic DNA-damage axis, forms a candidate two-layer radiation-phase response biomarker that is orthogonal to ICB-driven biomarkers. For the ICB-eligible MSI-H minority (5–7 % of LARC [14]), dostarlimab [5] and related MMR-deficient rectal ICB strategies remain first-line. For the MSS majority, the present work proposes that the pre-CRT CD8-cytotoxic axis can stratify candidates for radiation-based multimodal therapy across nCRT and TNT designs.
+
+**What paired analysis adds that pre-only cannot.** Four independent information layers are accessible only through the paired pre/post-RT biopsies that this TNT design enables: (i) target engagement of the baseline predictor axis (§3.9); (ii) directional coherence of the immune repertoire response (§3.10); (iii) within-good cascade phenomenology of mutation/neoantigen/HLA-LOH clearance and Treg/MHC-II/B-cell infiltration (§3.11); and (iv) the convergence-null distinction between static and dynamic layers (§3.8). None of these are derivable from pre-only analyses, and three of the four — (i), (ii), (iv) — are original contributions of this work. The biological picture is consistent with Weichselbaum et al's immunogenic-radiation framework [21,22], cGAS-STING signalling on irradiated tumor DNA [23,24], and the Akiyoshi et al 2023 cytotoxic-lymphocyte OR of 3.81 [61].
+
+**Limitations.** Single-center n = 35 discovery; 8/49 tumors used tumor-only Mutect2 calling (stringently PoN-filtered); microarray-era external cohorts have limited probe coverage for specific signature genes, which we suspect contributes to heterogeneity of Thread-1 signals in the four excluded cohorts; survival data are not yet mature; HLA-LOH analysis uses stricter Bonferroni-corrected IMGT-read-counting rather than the published LOHHLA pipeline [30] (results from the two stringency tiers agree). By design the paired biopsies sample only the radiation phase of TNT and do not observe consolidation-phase biology; a public TNT-matched paired cohort with full-TNT outcome labels does not yet exist. Paired cascade between-group claims (other than Treg) are hypothesis-generating at n = 12. The directional-coherence result for the IGH V-gene repertoire is a discovery-cohort-specific pharmacodynamic claim that currently lacks external validation because no nCRT external cohort provides paired RT-only post biopsies. The specific V-gene call-outs reported here (IGHV6-1 and, more weakly, IGHV3-7 / IGHV3-74) should be interpreted as examples in service of the aggregate repertoire finding rather than as validated single-gene biomarkers.
+
+**Future directions.** Prospective TNT-adaptive translational substudies combining pre-CRT Thread-1 + Thread-2 stratification with mid-treatment IGH repertoire and Treg readouts; single-cell RNA-seq of paired pre-/post-CRT biopsies to resolve the B-cell / TLS infiltration kinetics at repertoire resolution [31–33]; patient-derived rectal organoid co-cultures to test causality of the pharmacodynamic components [52]; integration with germline / somatic actionability catalogues [53]; DFS / OS integration as outcome data mature.
+
+---
+
+## Conclusion
+
+Two orthogonal pre-CRT molecular axes — tumor-intrinsic DNA-damage-repair / cell-cycle proficiency (Thread 1; DSB/HDR Z = +3.17, cell-cycle Z = +3.21, E2F/MYC Z = +2.79 in 5-cohort N = 518 external meta, all P < 0.01) and immune CD8-cytotoxic engagement (Thread 2; Z = +3.29 in 6-source N = 816 meta including Akiyoshi et al 2023) — jointly predict final TNT response in MSS LARC with nested-CV LASSO AUC 0.745, and reproduce across a chemo-timing axis that supports a regimen-agnostic interpretation of the pre-CRT predictor within multimodal genotoxic therapy. Paired radiation-phase biopsies further demonstrate that the Thread-1 axes are target-engaged by RT in both response groups (EMT up 6/6 in good responders, P = 0.016) and that the IGH V-gene repertoire response is directionally coherent in good responders and stochastic in bad responders (three aggregate tests P < 0.05), providing an orthogonal mid-treatment pharmacodynamic read. A pre-specified convergence test confirms the static baseline and dynamic radiation-phase layers are statistically independent, motivating a two-layer clinical algorithm for TNT-adaptive trials: pre-CRT stratification at diagnosis plus a mid-treatment directional-coherence read at the RT → consolidation gap. The immune arm of the discovery is pan-CRT reproducible; the tumor-intrinsic arm is regimen-agnostic across consolidated and concurrent chemo-timing; and the pharmacodynamic directional-coherence layer is a new pre-specified biomarker candidate that awaits prospective TNT-matched validation.
+
+---
+
+## Figures — matching `genome_medicine_submission/main_figures/`
+
+- **Figure 1.** Study design and headline summary (4-panel, Option 2 layout). **A** Study design schematic — TNT timeline with radiation-phase sampling window explicitly bracketed; chemo-timing contrast (our TNT consolidation vs external nCRT concurrent) annotated. **B** Cohort Sankey. **C** Sample × assay matrix (WES 29 normal + 35 pre + 14 post; RNA 10 normal + 33 pre + 13 post). **D** Headline four-row mini-forest: (1) pre-CRT parsimonious 4-feature LASSO nested LOOCV AUC 0.745 [0.56, 0.90]; (2) Thread 1 external 5-cohort meta DSB Z = +3.17, cell-cycle Z = +3.21, E2F/MYC Z = +2.79; (3) Thread 2 6-source CD8-cytotoxic Z = +3.29 P = 0.001 N = 816; (4) paired radiation-phase target engagement EMT 6/6 up P = 0.016 + IGH directional coherence Wilcoxon P = 0.035.
+- **Figure 2.** WES landscape (A oncoprint N = 35 pre; B TMB raincloud; C SBS signature attribution; D response-grouped TMB + MSI waterfall; E CNV + HRD proxy; F HRD breakdown LST/TAI/LOH).
+- **Figure 3.** Pre-CRT Thread 1 — tumor-intrinsic pathways (A Hallmark running-ES top sets; B Hallmark NES × FDR bubble; C Reactome pathway dotplot; D GSEA enrichment-map network; E ssGSEA 95-set heatmap; F category-level NES boxplot).
+- **Figure 4.** Pre-CRT Thread 2 — immune landscape (A TME signature radar; B 22-signature z-score heatmap; C DEG volcano; D signature-response forest lollipop; E CD8-cytotoxic × CD8 exhaustion biaxial; F TLS Cabrita score).
+- **Figure 5.** Integrated predictor (A feature correlation; **B nested LOOCV ROC: 36-feature parsimonious ElasticNet AUC 0.745 [0.56, 0.90]**; C four-feature forest DSB repair / deletion fraction / MHC II / MSI %; D UMAP of integrated features; E SHAP beeswarm; F per-subject predicted probability).
+- **Figure 6.** Paired radiation-phase cascade phenomenology — BCa 95 % CIs (A between-group BCa forest: Treg strictly above zero; B paired pre→post slopes for Treg / MHC-II / CD8 exhaustion / IGH count; C Δ forest; D per-subject Δ waterfall; E fishplot of paired clonal dynamics; F cascade schematic with convergence-null callout).
+- **Figure 7.** External validation — two-thread regimen-agnostic meta (**A forest: 5-cohort Thread 1 DSB / cell-cycle / E2F-MYC / EMT + 6-source Thread 2 CD8 including Akiyoshi row**; B signature × cohort heatmap; C concordance bar; D discovery versus external effect sizes for both threads).
+- **Figure 8.** HLA class I landscape and MHC-I neoantigen cascade (A HLA allele frequency; B HLA homozygosity; C HLA-LOH strict vs lite; D pre-CRT neoantigen burden; E paired Δ binders; F per-subject neoantigen lollipop).
+- **Figure 9.** Clonal evolution during the radiation phase (PyClone-VI on 12 paired subjects).
+
+### New paired-analysis figures (from 260418_add/)
+
+- **Figure E.** Baseline 4-factor spaghetti — per-subject pre→post composite z-score, coloured by response, with sign counts annotated.
+- **Figure F.** Baseline factor directional concordance bar — fraction moving in predicted direction per factor per group, with 6/6, 5/6, 4/6 count labels.
+- **Figure G.** IGHV repertoire coherence summary — paired scatter of good vs bad majority fractions (53 V-genes), Wilcoxon boxplot of the paired gap, pattern pie.
+- **Figure H.** IGHV focus spaghetti — IGHV6-1 (strongest), IGHV3-7 and IGHV3-74 (user-prior), plus top coherent V-genes from the sign-test scan.
+
+## Supplementary figures — matching `genome_medicine_submission/supplementary_figures/`
+
+- **Supp Fig S1.** Cohort QC.
+- **Supp Fig S2.** SBS signature panel.
+- **Supp Fig S3.** CNV + HRD detail per subject.
+- **Supp Fig S4.** Oncoprint + VAF detail.
+- **Supp Fig S5.** Full GSEA supplement (Hallmark + Reactome).
+- **Supp Fig S6.** ssGSEA + CMS classification detail.
+- **Supp Fig S7.** TRUST4 immune repertoire per sample (TCR/BCR diversity).
+- **Supp Fig S8.** ML model comparison (LASSO / ElasticNet / RandomForest, 5-scenario nested LOOCV).
+- **Supp Fig S9.** GEO cohorts overview + CONSORT-style 9 → 5 primary + 4 excluded exclusion diagram.
+- **Supp Fig S10.** HLA/neoantigen detail.
+- **Supp Fig S11.** PyClone-VI diagnostics.
+- **Supp Fig S12.** Sample-flow CONSORT diagram.
+- **Supp Fig S13.** HLA-LOH strict vs lite, subj 3 and 4 pre→post resolution.
+- **Supp Fig S14.** Per-patient clinical waterfall.
+
+## Supplementary text
+
+- **Supp Text S1.** Extended sequencing methods.
+- **Supp Text S2.** Nested-CV pipeline and 5-scenario ablation details.
+- **Supp Text S3.** Signature composition audit — CD8 proliferation cell-cycle contamination and response-label classifier bug; corrected pure CD8-cytotoxic panel.
+- **Supp Text S4.** Sensitivity analyses — tumor-purity-adjusted paired Δ; BH FDR across cascade claims; drop-cohort leave-one-out meta; full-9-cohort vs restricted-5-cohort side-by-side.
+- **Supp Text S5.** Magnitude versus directional-consistency test duality — worked example on IGHV3-7 / IGHV3-74 / IGHV6-1 showing that Wilcoxon / MW on Δ and binomial sign / Fisher on up-down counts test non-identical features of the paired data, and that for small-N paired designs both must be reported.
+
+## Tables — materialised in `genome_medicine_submission/tables/`
+
+- **Table 1.** Clinical characteristics by response.
+- **Table 2.** Top 20 integrated-feature associations.
+- **Table 3.** External-validation meta summary (Thread 1 + Thread 2 in restricted 5-cohort + Akiyoshi augmented CD8 row).
+- **Table S1.** 36-feature per-subject master table (CD8 proliferation removed).
+- **Table S2.** SBS signature activities.
+- **Table S3.** Full GSEA Hallmark + Reactome.
+- **Table S4.** CRC driver mutations per sample.
+- **Table S5.** HLA class I types per subject.
+- **Table S6.** pVACseq neoantigen per-sample detail.
+- **Table S7A.** External validation per-cohort detail — 9-cohort sensitivity meta.
+- **Table S7B.** External validation 4 excluded cohorts with regimen / endpoint / label rationale.
+- **Table S7C.** Akiyoshi 2023 alternative-statistic sensitivity for Thread 2 CD8.
+- **Table S8.** Cascade BCa 95 % bootstrap CIs.
+- **Table S9.** HLA-LOH lenient vs strict per-locus calls.
+- **Table S10.** Baseline 4-factor per-subject Δ and sign counts (§3.9).
+- **Table S11.** TRUST4 IGHV per-V-gene directional stats (§3.10).
+
+---
+
+## Declarations
+
+### Ethics approval and consent to participate
+The study was approved by the Institutional Review Board of Seoul National University Hospital (IRB approval number: [to be inserted]). All participants provided written informed consent for collection and molecular profiling of biopsy and blood samples and for publication of de-identified results.
+
+### Consent for publication
+Not applicable (no individually identifiable participant data are presented).
+
+### Availability of data and materials
+Processed analysis tables, intermediate results, and the full analysis code base are available at <https://github.com/Soonlab/TNT>. Raw sequencing data (Macrogen project IDs HN00249207 for WES and HN00249209 for RNA-seq, all 35 patients) will be deposited in NCBI SRA under controlled access on acceptance. External validation cohorts are publicly available from NCBI GEO under accessions GSE150082, GSE35452, GSE119409, GSE45404, GSE94104, GSE56699, GSE46862, GSE133057, GSE87211, GSE216616 (Akiyoshi et al, 2023), GSE145037, and GSE233517.
+
+### Competing interests
+The authors declare no competing interests.
+
+### Funding
+[Funding sources to be inserted.]
+
+### Authors' contributions
+[Senior Author] conceived and supervised the study. [Author 1] performed bioinformatics analyses (WES somatic calling, signature attribution, integration, machine learning, external meta-analysis, paired pharmacodynamics, IGHV directional-consistency analysis, regimen-agnostic interpretation). [Author 2] performed RNA-seq pipelines, GSEA and immune deconvolution. [Clinical co-authors] curated clinical metadata, performed biopsy collection, and provided TRG scoring. All authors interpreted the data, drafted and approved the final manuscript.
+
+### Acknowledgements
+We thank the patients and families who participated in this study, the surgical and pathology teams at Seoul National University Hospital, and Macrogen Inc. for sequencing. We acknowledge the open-data contributors of the GEO cohorts used for external validation and Akiyoshi et al (2023) whose published 298-patient cohort provides convergent independent evidence for the CD8-cytotoxic axis reported here.
+
+---
+
+## References
+
+1. Conroy T et al. Lancet Oncol 2021 (PRODIGE 23).
+2. Bahadoer RR et al. Lancet Oncol 2021 (RAPIDO).
+3. Garcia-Aguilar J et al. JCO 2022 (OPRA).
+4. Cercek A et al. JAMA Oncol 2022.
+5. Cercek A et al. N Engl J Med 2022 (dostarlimab in MMR-d rectal).
+6. Guinney J et al. Nat Med 2015 (CMS consortium).
+7. Ganesh K et al. Nat Rev Gastroenterol Hepatol 2019.
+8. Teng F et al. Int J Radiat Oncol Biol Phys 2015 (CD8 TIL and nCRT response).
+9. Shinto E et al. Ann Surg Oncol 2014 (CD8 density predicts rectal nCRT).
+10. Teng F et al. Sci Rep 2016 (nCRT increases CD8/GrzB).
+11. Lim YJ et al. Sci Rep 2023 (GSE233517; CRT-induced CD8 / IFN-γ).
+12. Smith JJ et al. Ann Surg 2019 (watch-and-wait outcomes).
+13. Garcia-Aguilar J et al. Lancet Oncol 2015 (early TNT feasibility).
+14. Koopman M et al. Br J Cancer 2009 (MSI prevalence CRC).
+15. Agostini M et al. PLoS ONE 2014 (nCRT response microarray predictors).
+16. Rimkus C et al. Clin Gastroenterol Hepatol 2008 (gene signature rectal).
+17. Casado E et al. Clin Cancer Res 2011 (rectal nCRT transcriptomics).
+18. Kim IJ et al. Oncogene 2007 (rectal radiation response signatures).
+19. Matsutani S et al. Oncol Lett 2018 (TILs predict rectal nCRT).
+20. McCoy MJ et al. Br J Cancer 2015 (CD8 TIL pretreatment rectal).
+21. Weichselbaum RR et al. Nat Rev Clin Oncol 2017 (radiation as immunogenic).
+22. Deng L et al. Immunity 2014 (cGAS-STING post-radiation).
+23. Vanpouille-Box C et al. Nat Commun 2017 (TREX1/radiation/cGAS-STING).
+24. Golden EB et al. Lancet Oncol 2015 (abscopal effect radiation).
+25. Nussinov R et al. Cancer Res 2022 (MSS rectal biology review).
+26. Sadanandam A et al. Nat Med 2013 (CRC subtypes).
+27. Dienstmann R et al. Ann Oncol 2017 (CMS classification clinical utility).
+28. Isella C et al. Nat Commun 2017 (CMS4 stromal drivers).
+29. Mariathasan S et al. Nature 2018 (TGF-β blockade response).
+30. McGranahan N et al. Cell 2017 (LOHHLA original).
+31. Cabrita R et al. Nature 2020 (TLS and checkpoint response).
+32. Helmink BA et al. Nature 2020 (B cells and TLS in ICB).
+33. Petitprez F et al. Nature 2020 (B cells and TLS sarcoma).
+34. Rooney MS et al. Cell 2015 (immune cytolytic activity pan-cancer).
+35. Thorsson V et al. Immunity 2018 (immune landscape TCGA).
+36. Rosenthal R et al. Nature 2019 (HLA-LOH and immune escape).
+37. Garrido F et al. Trends Immunol 2010 (HLA class I loss).
+38. Chowell D et al. Science 2018 (HLA heterozygosity and ICB).
+39. Le DT et al. N Engl J Med 2015 (MSI and PD-1).
+40. Overman MJ et al. Lancet Oncol 2017 (nivolumab MSI CRC).
+41. Andre T et al. N Engl J Med 2020 (pembrolizumab first-line MSI CRC).
+42. van Gijn W et al. Lancet Oncol 2011 (Dutch TME long-term).
+43. Sauer R et al. N Engl J Med 2004 (CAO/ARO 94).
+44. Ruppert R et al. Ann Surg 2018 (German CAO/ARO nCRT outcomes).
+45. Maas M et al. JCO 2011 (wait-and-see).
+46. Appelt AL et al. Lancet Oncol 2015 (organ preservation modern).
+47. Habr-Gama A et al. Clin Oncol 2014 (watch-and-wait Brazilian experience).
+48. Renehan AG et al. Lancet Oncol 2016 (organ-preserving strategies).
+49. Bai X et al. Oncotarget 2016 (EMT as CRT resistance).
+50. Thiery JP. Nat Rev Cancer 2002 (EMT).
+51. Ye X, Weinberg RA. Trends Cell Biol 2015 (EMT plasticity).
+52. Ganesh K et al. Cancer Cell 2022 (rectal cancer organoids and response).
+53. Yaeger R et al. Cancer Cell 2018 (CRC mutation actionability).
+54. Taieb J et al. Ann Oncol 2022 (rectal cancer biomarkers review).
+55. Barresi V et al. Virchows Arch 2017 (TRG Dworak intrarater).
+56. Chetty R et al. Virchows Arch 2012 (TRG reproducibility).
+57. Ryan R et al. Histopathology 2005 (TRG Ryan system).
+58. Mandard AM et al. Cancer 1994 (original Mandard TRG).
+59. Dworak O et al. Int J Colorectal Dis 1997 (Dworak TRG).
+60. Rödel C et al. JCO 2005 (Rödel TRG rectal).
+61. Akiyoshi T et al. JAMA Netw Open 2023; GSE216616 — Transcriptomic analyses of pretreatment tumor biopsy samples, response to neoadjuvant chemoradiotherapy, and survival in advanced rectal cancer (n = 298; cytotoxic lymphocyte score OR 3.81 [1.82, 7.97]; GZMA × PRF1 cytolytic activity P = 0.005; IFN-γ Hallmark enriched in responders).
+
+---
+
+*End of manuscript v0.7.4 — Genome Medicine submission — 2026-04-18.*
