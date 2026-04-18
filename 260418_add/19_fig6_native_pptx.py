@@ -133,8 +133,16 @@ def add_text(slide, x, y, w, h, text, size=8, bold=False,
     return tb
 
 
+def _i(v):
+    """Coerce to int --- PowerPoint rejects XML width='0.0' type strings,
+    so every coordinate / size passed to a shape creator must be an
+    integer number of EMU."""
+    return int(round(float(v)))
+
+
 def add_line(slide, x1, y1, x2, y2, color=LINE, width=0.5, dashed=False):
-    c = slide.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, x1, y1, x2, y2)
+    c = slide.shapes.add_connector(MSO_CONNECTOR.STRAIGHT,
+                                   _i(x1), _i(y1), _i(x2), _i(y2))
     c.line.color.rgb = color
     c.line.width = Pt(width)
     if dashed:
@@ -148,7 +156,10 @@ def add_line(slide, x1, y1, x2, y2, color=LINE, width=0.5, dashed=False):
 
 
 def add_rect(slide, x, y, w, h, fill=None, line_color=None, line_width=0.5):
-    shp = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, x, y, w, h)
+    # sizes must be strictly positive for PowerPoint to render
+    w = max(_i(w), 1)
+    h = max(_i(h), 1)
+    shp = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, _i(x), _i(y), w, h)
     if fill is None:
         shp.fill.background()
     else:
@@ -165,8 +176,9 @@ def add_rect(slide, x, y, w, h, fill=None, line_color=None, line_width=0.5):
 
 
 def add_circle(slide, cx, cy, r, fill=None, line_color=None, line_width=0.5):
+    r = max(_i(r), 1)
     shp = slide.shapes.add_shape(MSO_SHAPE.OVAL,
-                                 cx - r, cy - r, 2 * r, 2 * r)
+                                 _i(cx) - r, _i(cy) - r, 2 * r, 2 * r)
     if fill is None:
         shp.fill.background()
     else:
@@ -180,6 +192,33 @@ def add_circle(slide, cx, cy, r, fill=None, line_color=None, line_width=0.5):
     shp.shadow.inherit = False
     kill_shadow(shp)
     return shp
+
+
+def add_diamond(slide, cx, cy, r, fill=None, line_color=None, line_width=0.5):
+    r = max(_i(r), 1)
+    shp = slide.shapes.add_shape(MSO_SHAPE.DIAMOND,
+                                 _i(cx) - r, _i(cy) - r, 2 * r, 2 * r)
+    if fill is None:
+        shp.fill.background()
+    else:
+        shp.fill.solid()
+        shp.fill.fore_color.rgb = fill
+    if line_color is None:
+        shp.line.fill.background()
+    else:
+        shp.line.color.rgb = line_color
+        shp.line.width = Pt(line_width)
+    shp.shadow.inherit = False
+    kill_shadow(shp)
+    return shp
+
+
+def lighten(rgb_hex, factor=0.72):
+    """Blend an RGB triple towards white by 'factor' (0=identity, 1=white)."""
+    r0, g0, b0 = rgb_hex
+    return RGBColor(int(r0 + (255 - r0) * factor),
+                    int(g0 + (255 - g0) * factor),
+                    int(b0 + (255 - b0) * factor))
 
 
 def draw_panel_letter(slide, letter):
@@ -291,39 +330,123 @@ def build_A():
                  f"{pretty}   (pred: {pred})",
                  size=8, bold=True, color=INK, align="center")
 
-        # spaghetti lines
-        for _, row_ in sub.iterrows():
-            color = GOOD if row_.response_bin == "good" else BAD
-            add_line(s, tx(0), ty(row_.pre), tx(1), ty(row_.post),
-                     color, 1.1)
-        # hollow circle markers, pre and post
-        for _, row_ in sub.iterrows():
-            color = GOOD if row_.response_bin == "good" else BAD
-            add_circle(s, tx(0), ty(row_.pre), Emu(25000),
-                       fill=WHITE, line_color=color, line_width=1.0)
-            add_circle(s, tx(1), ty(row_.post), Emu(25000),
-                       fill=WHITE, line_color=color, line_width=1.0)
+        # =================================================================
+        # ~~~ FANCY spaghetti composition (Nature/Cell paired-pre/post
+        # convention with group summaries):
+        #   (i)   very light individual spaghetti slopes beneath
+        #   (ii)  thin IQR rectangles at pre and post per group
+        #   (iii) hollow circle markers at each individual timepoint
+        #   (iv)  bold group-median slope on top, filled diamond markers
+        #   (v)   small raincloud-style jitter dots at pre and post
+        # =================================================================
 
-        # annotation box with within-group sign counts
+        good = sub[sub.response_bin == "good"]
+        bad = sub[sub.response_bin == "bad"]
+
+        def iqr(arr):
+            q25, q75 = np.percentile(arr, [25, 75])
+            return q25, q75
+
+        g_pre_q = iqr(good.pre.values); g_post_q = iqr(good.post.values)
+        b_pre_q = iqr(bad.pre.values); b_post_q = iqr(bad.post.values)
+        g_med_pre = float(np.median(good.pre.values))
+        g_med_post = float(np.median(good.post.values))
+        b_med_pre = float(np.median(bad.pre.values))
+        b_med_post = float(np.median(bad.post.values))
+
+        # (i) Individual slopes --- use LIGHT group colour so they form
+        # a soft underlay; post median trace will sit on top in full
+        # saturation.
+        LIGHT_GOOD = lighten(GOOD_HEX, 0.62)
+        LIGHT_BAD = lighten(BAD_HEX, 0.62)
+        for _, row_ in sub.iterrows():
+            color = LIGHT_GOOD if row_.response_bin == "good" else LIGHT_BAD
+            add_line(s, tx(0), ty(row_.pre), tx(1), ty(row_.post),
+                     color, 0.8)
+
+        # (ii) IQR rectangles at pre and post, per group --- a small
+        # vertical bar spanning 25th-75th percentile.
+        iqr_w = Inches(0.10)
+        half = iqr_w / 2
+        # good --- slight offset left at each timepoint to separate from bad
+        for xv, qlo, qhi in [(0, g_pre_q[0], g_pre_q[1]),
+                             (1, g_post_q[0], g_post_q[1])]:
+            cx = tx(xv) - int(iqr_w)
+            add_rect(s, cx - half, ty(qhi), iqr_w,
+                     max(ty(qlo) - ty(qhi), 2),
+                     fill=LIGHT_GOOD, line_color=GOOD, line_width=0.6)
+        for xv, qlo, qhi in [(0, b_pre_q[0], b_pre_q[1]),
+                             (1, b_post_q[0], b_post_q[1])]:
+            cx = tx(xv) + int(iqr_w)
+            add_rect(s, cx - half, ty(qhi), iqr_w,
+                     max(ty(qlo) - ty(qhi), 2),
+                     fill=LIGHT_BAD, line_color=BAD, line_width=0.6)
+
+        # (iii) hollow circle markers at each individual timepoint
+        # (on top of light slopes, below IQR rects? -- keep them on top
+        # so the reader can identify each subject)
+        for _, row_ in sub.iterrows():
+            color = GOOD if row_.response_bin == "good" else BAD
+            add_circle(s, tx(0), ty(row_.pre), Emu(22000),
+                       fill=WHITE, line_color=color, line_width=0.9)
+            add_circle(s, tx(1), ty(row_.post), Emu(22000),
+                       fill=WHITE, line_color=color, line_width=0.9)
+
+        # (iv) Bold group-median slope (GOOD + BAD) with filled diamond
+        # endpoints for strong visual emphasis.
+        add_line(s, tx(0) - int(iqr_w), ty(g_med_pre),
+                 tx(1) - int(iqr_w), ty(g_med_post), GOOD, 2.2)
+        add_diamond(s, tx(0) - int(iqr_w), ty(g_med_pre), Emu(42000),
+                    fill=GOOD, line_color=WHITE, line_width=1.2)
+        add_diamond(s, tx(1) - int(iqr_w), ty(g_med_post), Emu(42000),
+                    fill=GOOD, line_color=WHITE, line_width=1.2)
+        add_line(s, tx(0) + int(iqr_w), ty(b_med_pre),
+                 tx(1) + int(iqr_w), ty(b_med_post), BAD, 2.2)
+        add_diamond(s, tx(0) + int(iqr_w), ty(b_med_pre), Emu(42000),
+                    fill=BAD, line_color=WHITE, line_width=1.2)
+        add_diamond(s, tx(1) + int(iqr_w), ty(b_med_post), Emu(42000),
+                    fill=BAD, line_color=WHITE, line_width=1.2)
+
+        # =================================================================
+        # Annotation box with within-group sign counts + between-group MW
+        # =================================================================
         g = sign_df[(sign_df.factor == fname) & (sign_df.group == "good")].iloc[0]
         b = sign_df[(sign_df.factor == fname) & (sign_df.group == "bad")].iloc[0]
+        try:
+            mw_p = float(stats_df[(stats_df.factor == fname)
+                                  & (stats_df.level == "composite")]
+                         .iloc[0]["mw_p"])
+        except Exception:
+            mw_p = float("nan")
         arrow = "↓" if pred == "down" else "↑"
+
         ann_x = ax_x + Inches(0.05)
-        ann_y = ay_top = ax_y + Inches(0.04)
-        # box with faint fill
-        box_w = Inches(1.30); box_h = Inches(0.46)
+        ann_y = ax_y + Inches(0.03)
+        box_w = Inches(1.35); box_h = Inches(0.58)
         add_rect(s, ann_x, ann_y, box_w, box_h,
                  fill=WHITE, line_color=GREY, line_width=0.3)
-        add_text(s, ann_x + Inches(0.04), ann_y,
-                 box_w - Inches(0.08), Inches(0.18),
+        add_text(s, ann_x + Inches(0.04), ann_y + Emu(8000),
+                 box_w - Inches(0.08), Inches(0.16),
                  f"good {arrow} : {int(g.n_predicted)}/{int(g.n_total)}  "
                  f"(P = {float(g.sign_binomial_one_sided_P):.3f})",
                  size=6, color=GOOD, bold=True, anchor="top", align="left")
-        add_text(s, ann_x + Inches(0.04), ann_y + Inches(0.20),
-                 box_w - Inches(0.08), Inches(0.18),
+        add_text(s, ann_x + Inches(0.04), ann_y + Inches(0.18),
+                 box_w - Inches(0.08), Inches(0.16),
                  f"bad  {arrow} : {int(b.n_predicted)}/{int(b.n_total)}  "
                  f"(P = {float(b.sign_binomial_one_sided_P):.3f})",
                  size=6, color=BAD, bold=True, anchor="top", align="left")
+        add_text(s, ann_x + Inches(0.04), ann_y + Inches(0.36),
+                 box_w - Inches(0.08), Inches(0.16),
+                 f"MW Δ (good vs bad) P = {mw_p:.2f}",
+                 size=6, color=INK, anchor="top", align="left")
+
+        # Small direction arrow in the top-right corner of each sub-plot
+        arr_x = ax_x + ax_w - Inches(0.28)
+        arr_y = ax_y + Inches(0.12)
+        add_text(s, arr_x, arr_y - Inches(0.07),
+                 Inches(0.26), Inches(0.20),
+                 f"pred {arrow}", size=7, bold=True,
+                 color=RGBColor(0x66, 0x66, 0x66), align="center")
 
     # Shared y-axis title (rotated, at far left)
     yt = add_text(s, Inches(0.18), Inches(1.35), Inches(0.45), Inches(1.7),
