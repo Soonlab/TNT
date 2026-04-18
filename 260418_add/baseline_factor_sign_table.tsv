@@ -1,0 +1,9 @@
+factor	predicted_direction	group	n_predicted	n_total	fraction_predicted	sign_binomial_one_sided_P
+DSB_HDR_repair	down	good	5	6	0.8333333333333334	0.109375
+DSB_HDR_repair	down	bad	5	6	0.8333333333333334	0.109375
+Tumor_cellcycle	down	good	4	6	0.6666666666666666	0.34375
+Tumor_cellcycle	down	bad	5	6	0.8333333333333334	0.109375
+E2F_MYC_cellcycle	down	good	5	6	0.8333333333333334	0.109375
+E2F_MYC_cellcycle	down	bad	5	6	0.8333333333333334	0.109375
+EMT	up	good	6	6	1.0	0.015625
+EMT	up	bad	5	6	0.8333333333333334	0.109375
