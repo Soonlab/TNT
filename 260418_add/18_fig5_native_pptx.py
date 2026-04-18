@@ -93,6 +93,7 @@ GREY = RGBColor(0xBB, 0xBB, 0xBB)
 LT_GREY = RGBColor(0xDD, 0xDD, 0xDD)
 SHADE = RGBColor(0xC8, 0xDE, 0xD8)   # light teal for CI ribbon (matches GOOD)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+HIGHLIGHT = RGBColor(0xD4, 0xA3, 0x00)   # gold for emphasis / Youden / misclassified
 
 # HEX versions for ramps / interpolation
 GOOD_HEX = (0x0A, 0x7D, 0x6E)
@@ -122,7 +123,8 @@ def new_slide(prs, w=SLIDE_W, h=SLIDE_H):
 
 
 def add_text(slide, x, y, w, h, text, size=8, bold=False,
-             color=INK, align="left", anchor="middle", font=FONT):
+             color=INK, align="left", anchor="middle", font=FONT,
+             italic=False):
     tb = slide.shapes.add_textbox(x, y, w, h)
     tf = tb.text_frame
     tf.margin_left = 0
@@ -148,6 +150,7 @@ def add_text(slide, x, y, w, h, text, size=8, bold=False,
     r.font.name = font
     r.font.size = Pt(size)
     r.font.bold = bool(bold)
+    r.font.italic = bool(italic)
     r.font.color.rgb = color
     kill_shadow(tb)
     return tb
@@ -181,6 +184,25 @@ def add_rect(slide, x, y, w, h, fill=None, line_color=None, line_width=0.5):
 def add_circle(slide, cx, cy, r, fill=None, line_color=None, line_width=0.5):
     shp = slide.shapes.add_shape(MSO_SHAPE.OVAL,
                                  cx - r, cy - r, 2 * r, 2 * r)
+    if fill is None:
+        shp.fill.background()
+    else:
+        shp.fill.solid()
+        shp.fill.fore_color.rgb = fill
+    if line_color is None:
+        shp.line.fill.background()
+    else:
+        shp.line.color.rgb = line_color
+        shp.line.width = Pt(line_width)
+    shp.shadow.inherit = False
+    kill_shadow(shp)
+    return shp
+
+
+def add_diamond(slide, cx, cy, r, fill=None, line_color=None, line_width=0.5):
+    r = max(int(r), 1)
+    shp = slide.shapes.add_shape(MSO_SHAPE.DIAMOND,
+                                 int(cx) - r, int(cy) - r, 2 * r, 2 * r)
     if fill is None:
         shp.fill.background()
     else:
@@ -541,13 +563,54 @@ def build_A():
                  lab, size=6, color=INK, align="left")
 
     # =========================================================
+    # FANCY ADDITION: gold borders + star markers on 4 winning features
+    # =========================================================
+    WINNING_FEATS = {
+        "DNA Double-Strand Break Repair R-HSA-5693532": "DSB repair",
+        "frac_amp": "Del. fraction",
+        "MHC_II": "MHC II",
+        "MSI_pct": "MSI %",
+    }
+    for feat, short in WINNING_FEATS.items():
+        if feat not in feat_names:
+            continue
+        idx = feat_names.index(feat)
+        cx = int(hm_x + idx * cell_w)
+        cy = int(hm_y + idx * cell_h)
+        # gold border ROW (thin)
+        add_rect(s, hm_x, cy, hm_w, int(cell_h),
+                 line_color=HIGHLIGHT, line_width=0.8)
+        # gold border COL (thin)
+        add_rect(s, cx, hm_y, int(cell_w), hm_h,
+                 line_color=HIGHLIGHT, line_width=0.8)
+        # gold diamond marker on the group strip, top
+        add_diamond(s, int(cx + cell_w / 2),
+                    int(hm_y - Inches(0.10) + Inches(0.04)),
+                    Emu(18000),
+                    fill=HIGHLIGHT, line_color=WHITE, line_width=0.5)
+        # short label above the strip
+        add_text(s, int(cx + cell_w / 2 - Inches(0.30)),
+                 int(hm_y - Inches(0.22)),
+                 Inches(0.60), Inches(0.10),
+                 short, size=4, bold=True, color=HIGHLIGHT,
+                 align="center")
+    # winner-feature legend chip on right side
+    legend_y = cb_y + cb_h + Inches(0.25) + 6 * Inches(0.16) + Inches(0.15)
+    add_diamond(s, right_x + Inches(0.08), legend_y + Inches(0.05),
+                Emu(24000), fill=HIGHLIGHT, line_color=WHITE, line_width=0.5)
+    add_text(s, right_x + Inches(0.20), legend_y - Emu(5000),
+             Inches(1.20), Inches(0.16),
+             "LASSO-selected", size=6, bold=True,
+             color=HIGHLIGHT, align="left")
+
+    # =========================================================
     # BOTTOM CAPTION
     # =========================================================
     add_text(s, Inches(0.2), PLOT_Y + PLOT_H + Inches(0.6),
              SLIDE_W - Inches(0.4), Inches(0.2),
              f"{n} integrated numeric features (cell-cycle-contaminated "
              "CD8-proliferation removed); top / left strips mark feature "
-             "group; ticks = feature index.",
+             "group; gold borders mark the 4 LASSO-selected features.",
              size=7, color=INK, align="center")
 
 
@@ -597,6 +660,24 @@ def build_B():
         if x_r - x_l > Emu(10000) and y_bot - y_top > Emu(10000):
             add_rect(s, x_l, y_top, x_r - x_l, y_bot - y_top, fill=SHADE)
 
+    # === FANCY ADDITION: AUC area fill (between ROC and diagonal) ===
+    # Approximate integration using thin vertical strips from diagonal to ROC.
+    # For each x, diagonal is y=x, ROC is at current TPR; fill region.
+    AUC_FILL = RGBColor(0xC5, 0xDF, 0xD7)   # slightly richer teal-tint
+    for i in range(len(base) - 1):
+        xa = to_x(base[i, 0]); ya = to_y(base[i, 1])
+        xb = to_x(base[i+1, 0]); yb = to_y(base[i+1, 1])
+        diag_ya = to_y(base[i, 0])
+        diag_yb = to_y(base[i+1, 0])
+        # Render thin vertical strip between diagonal (y=x at each FPR)
+        # and ROC curve. Only fill if ROC is above diagonal.
+        x_l = min(xa, xb); x_r = max(xa, xb)
+        top_pt = min(ya, yb)
+        bot_pt = max(diag_ya, diag_yb)
+        if x_r - x_l > Emu(8000) and bot_pt - top_pt > Emu(5000):
+            add_rect(s, x_l, top_pt, x_r - x_l, bot_pt - top_pt,
+                     fill=AUC_FILL, line_color=None)
+
     # observed ROC line (connected series)
     for i in range(len(base) - 1):
         x1 = to_x(base[i, 0]); y1 = to_y(base[i, 1])
@@ -606,6 +687,28 @@ def build_B():
     for i in range(0, len(base), max(1, len(base)//8)):
         add_circle(s, to_x(base[i, 0]), to_y(base[i, 1]),
                    Emu(25000), fill=GOOD, line_color=WHITE, line_width=0.6)
+
+    # === FANCY ADDITION: Youden's J optimal operating point ===
+    j_stat = tpr - fpr
+    j_idx = int(np.argmax(j_stat))
+    j_fpr = float(fpr[j_idx]); j_tpr = float(tpr[j_idx])
+    j_sens = j_tpr
+    j_spec = 1 - j_fpr
+    # star marker at Youden point
+    add_diamond(s, to_x(j_fpr), to_y(j_tpr), Emu(55000),
+                fill=HIGHLIGHT, line_color=WHITE, line_width=1.3)
+    # small annotation arrow + text
+    ann_px = to_x(j_fpr) - Inches(0.02)
+    ann_py = to_y(j_tpr) + Inches(0.15)
+    add_text(s, ann_px - Inches(0.55), ann_py,
+             Inches(1.10), Inches(0.13),
+             f"Youden J max",
+             size=6, bold=True, italic=True, color=HIGHLIGHT,
+             align="center")
+    add_text(s, ann_px - Inches(0.55), ann_py + Inches(0.13),
+             Inches(1.10), Inches(0.12),
+             f"sens {j_sens:.2f} / spec {j_spec:.2f}",
+             size=6, color=HIGHLIGHT, align="center")
 
     # AUC annotation box
     ann_x = to_x(0.55); ann_y = to_y(0.30)
@@ -633,6 +736,20 @@ def build_B():
     add_text(s, PLOT_X + Inches(0.45), leg_y + Inches(0.18),
              Inches(2.8), Inches(0.18),
              "95 % bootstrap CI ribbon", size=7, color=INK, align="left")
+    # AUC fill legend chip
+    add_rect(s, PLOT_X + Inches(0.1), leg_y + Inches(0.36),
+             Inches(0.3), Inches(0.1), fill=AUC_FILL)
+    add_text(s, PLOT_X + Inches(0.45), leg_y + Inches(0.32),
+             Inches(2.8), Inches(0.18),
+             "area under ROC (above diagonal)",
+             size=7, color=INK, align="left")
+    # Youden marker legend
+    add_diamond(s, PLOT_X + Inches(0.22), leg_y + Inches(0.53),
+                Emu(28000), fill=HIGHLIGHT, line_color=WHITE, line_width=0.8)
+    add_text(s, PLOT_X + Inches(0.45), leg_y + Inches(0.46),
+             Inches(3.0), Inches(0.18),
+             "Youden J optimal operating point",
+             size=7, color=INK, align="left")
 
 
 # ---------- Panel C: 4-feature coefficient forest ----------
@@ -657,22 +774,38 @@ def build_C():
     add_line(s, to_x(0), int(PLOT_Y),
              to_x(0), int(PLOT_Y + PLOT_H), INK, 0.8)
 
-    # feature labels (y axis)
+    # Group colours (same as Panel A)
+    GROUP_PAL_C = {
+        "DNA repair": RGBColor(0xA2, 0x4E, 0x78),
+        "Genomic": RGBColor(0x55, 0x55, 0x55),
+        "Immune": RGBColor(0x11, 0x8A, 0xB2),
+        "MSI": RGBColor(0xE3, 0x9A, 0x1E),
+    }
+    # feature labels (y axis) + fancy additions
     for i, row in rows.iterrows():
         ypos = to_y(i)
         label = row["feature"]
         if "DNA Double-Strand Break" in label:
             pretty = "DSB repair (R-HSA-5693532)"
+            group = "DNA repair"
         elif label == "frac_amp":
             pretty = "Genomic deletion fraction"
+            group = "Genomic"
         elif label == "MHC_II":
             pretty = "MHC class II signature"
+            group = "Immune"
         elif label == "MSI_pct":
             pretty = "MSI (%)"
+            group = "MSI"
         else:
             pretty = label
-        add_text(s, PLOT_X, ypos - Inches(0.11),
-                 Inches(1.7), Inches(0.22),
+            group = "Other"
+        # === FANCY: feature-group colour chip at far left ===
+        chip_col = GROUP_PAL_C.get(group, RGBColor(0xAA, 0xAA, 0xAA))
+        add_rect(s, PLOT_X + Inches(0.05), ypos - Inches(0.06),
+                 Inches(0.09), Inches(0.12), fill=chip_col)
+        add_text(s, PLOT_X + Inches(0.18), ypos - Inches(0.11),
+                 Inches(1.55), Inches(0.22),
                  pretty, size=8, color=INK, align="right")
 
         # lollipop stem
@@ -687,13 +820,34 @@ def build_C():
                  Inches(0.7), Inches(0.18),
                  f"{row['coef']:+.2f}",
                  size=8, color=color, bold=True, align="left")
+        # === FANCY: direction arrow chip (→ good / → bad) ===
+        arrow_x = to_x(row["coef"]) + Inches(0.55)
+        direction_txt = "→ predicts good" if row["coef"] > 0 else "→ predicts bad"
+        add_text(s, arrow_x, ypos - Inches(0.08),
+                 Inches(1.0), Inches(0.15),
+                 direction_txt, size=6, italic=True, color=color,
+                 align="left")
+
+    # === FANCY: group legend (under plot) ===
+    leg_y = PLOT_Y + PLOT_H + Inches(0.18)
+    add_text(s, Inches(0.15), leg_y - Inches(0.02),
+             Inches(1.2), Inches(0.14),
+             "Feature group:", size=6, bold=True, color=INK, align="left")
+    xb = Inches(1.1)
+    for lab, col in GROUP_PAL_C.items():
+        add_rect(s, xb, leg_y, Inches(0.09), Inches(0.10), fill=col)
+        add_text(s, xb + Inches(0.11), leg_y - Emu(5000),
+                 Inches(1.0), Inches(0.14),
+                 lab, size=6, color=INK, align="left")
+        xb += Inches(1.05)
 
     # caption
-    add_text(s, Inches(0.15), PLOT_Y + PLOT_H + Inches(0.4),
-             SLIDE_W - Inches(0.3), Inches(0.22),
+    add_text(s, Inches(0.15), PLOT_Y + PLOT_H + Inches(0.42),
+             SLIDE_W - Inches(0.3), Inches(0.18),
              "4 non-zero features selected by nested inner-CV; "
-             "+ = good > bad, − = good < bad",
-             size=8, color=INK, align="center")
+             "teal lollipop → predicts good (positive coef), "
+             "coral → predicts bad (negative coef).",
+             size=7, color=INK, align="center")
 
 
 # ---------- Panel D: UMAP by response ----------
@@ -713,10 +867,81 @@ def build_D():
                             y_range=(u2_lo, u2_hi),
                             xlab="UMAP 1", ylab="UMAP 2")
 
+    # === FANCY ADDITION: 68% / 95% confidence ellipses per response group ===
+    # Compute per-group mean + covariance, derive ellipse axes from eigen.
+    def draw_ellipse(centre_u, centre_v, sa, sb, angle_deg, color, width):
+        """Approximate an ellipse by a rotated OVAL auto-shape.
+        Since python-pptx OVAL is an axis-aligned oval that can only be
+        rotated via shape.rotation, we draw a rectangular bounding-box
+        oval and rotate it.
+        """
+        # Convert semi-axis data-units to EMU widths along UMAP axes
+        # width = 2*sa (data), height = 2*sb (data)
+        w_emu = abs(to_x(centre_u + sa) - to_x(centre_u - sa))
+        h_emu = abs(to_y(centre_v + sb) - to_y(centre_v - sb))
+        cx = to_x(centre_u); cy = to_y(centre_v)
+        shp = s.shapes.add_shape(MSO_SHAPE.OVAL,
+                                  int(cx - w_emu / 2),
+                                  int(cy - h_emu / 2),
+                                  int(max(w_emu, 1)),
+                                  int(max(h_emu, 1)))
+        shp.fill.background()
+        shp.line.color.rgb = color
+        shp.line.width = Pt(width)
+        shp.rotation = float(angle_deg)
+        shp.shadow.inherit = False
+        kill_shadow(shp)
+        return shp
+
+    for grp_val, grp_color in [(1, GOOD), (0, BAD)]:
+        mask = (y == grp_val)
+        pts = U[mask]
+        if len(pts) < 3:
+            continue
+        mu = pts.mean(axis=0)
+        cov = np.cov(pts.T)
+        # eigen decomposition
+        evals, evecs = np.linalg.eigh(cov)
+        order_e = np.argsort(evals)[::-1]
+        evals = evals[order_e]
+        evecs = evecs[:, order_e]
+        angle = np.degrees(np.arctan2(evecs[1, 0], evecs[0, 0]))
+        # 68% (chi²_2, 2.30) and 95% (chi², 5.99) scalings
+        sa68 = np.sqrt(2.30 * evals[0])
+        sb68 = np.sqrt(2.30 * evals[1])
+        sa95 = np.sqrt(5.99 * evals[0])
+        sb95 = np.sqrt(5.99 * evals[1])
+        # 95% ellipse (thin dashed-like via reduced width)
+        draw_ellipse(mu[0], mu[1], sa95, sb95, angle, grp_color, 0.5)
+        # 68% ellipse (solid, bolder)
+        draw_ellipse(mu[0], mu[1], sa68, sb68, angle, grp_color, 1.2)
+        # centroid marker
+        add_diamond(s, to_x(mu[0]), to_y(mu[1]), Emu(32000),
+                    fill=grp_color, line_color=WHITE, line_width=1.0)
+
+    # subjects with predicted prob & true label — identify misclassified
+    # probs_sorted has columns: subject_id, y, prob
+    mis_by_subj = {int(r.subject_id): int(r.y != (r.prob > 0.5))
+                   for _, r in probs_sorted.iterrows()}
+    subj_order = master["subject_id"].values
+
     for i in range(U.shape[0]):
         color = GOOD if y[i] == 1 else BAD
-        add_circle(s, to_x(U[i, 0]), to_y(U[i, 1]),
-                   Emu(40000), fill=color, line_color=WHITE, line_width=0.8)
+        sid = int(subj_order[i])
+        is_mis = bool(mis_by_subj.get(sid, 0))
+        # individual dots — slightly bigger for misclassified, with gold ring
+        r_i = Emu(55000) if is_mis else Emu(40000)
+        add_circle(s, to_x(U[i, 0]), to_y(U[i, 1]), r_i,
+                   fill=color,
+                   line_color=HIGHLIGHT if is_mis else WHITE,
+                   line_width=1.4 if is_mis else 0.8)
+        # subject ID text
+        if is_mis:
+            add_text(s, to_x(U[i, 0]) + Inches(0.08),
+                     to_y(U[i, 1]) - Inches(0.08),
+                     Inches(0.5), Inches(0.14),
+                     str(sid), size=6, bold=True, color=HIGHLIGHT,
+                     align="left")
 
     # legend
     leg_x = PLOT_X + Inches(3.2); leg_y = PLOT_Y + Inches(0.05)
@@ -729,6 +954,22 @@ def build_D():
     add_text(s, leg_x + Inches(0.2), leg_y + Inches(0.18),
              Inches(1.0), Inches(0.2),
              f"bad (n={int((y==0).sum())})", size=8, color=INK)
+    # misclassified marker legend
+    add_circle(s, leg_x + Inches(0.08), leg_y + Inches(0.48),
+               Emu(45000), fill=GOOD, line_color=HIGHLIGHT, line_width=1.4)
+    add_text(s, leg_x + Inches(0.2), leg_y + Inches(0.38),
+             Inches(1.3), Inches(0.2),
+             "misclassified  (gold ring, subject ID)",
+             size=6, color=HIGHLIGHT, bold=True)
+    # ellipse legend
+    add_text(s, leg_x, leg_y + Inches(0.65),
+             Inches(1.7), Inches(0.15),
+             "solid ellipse: 68 % CI",
+             size=6, color=RGBColor(0x55, 0x55, 0x55), align="left")
+    add_text(s, leg_x, leg_y + Inches(0.78),
+             Inches(1.7), Inches(0.15),
+             "thin ellipse: 95 % CI",
+             size=6, color=RGBColor(0x55, 0x55, 0x55), align="left")
 
 
 # ---------- Panel E: SHAP beeswarm (4 features) ----------
@@ -790,6 +1031,31 @@ def build_E():
                        fill=RGBColor(r, g, b),
                        line_color=WHITE, line_width=0.3)
 
+    # === FANCY ADDITION: right-edge mean |SHAP| global-importance bars ===
+    # For each feature row, show mean |SHAP| as a small gold bar extending
+    # from the right spine rightward. Scale: max_mean_abs = 1.0 bar width.
+    imp_bar_x = int(PLOT_X + PLOT_W + Inches(0.08))
+    imp_bar_w_max = Inches(0.65)
+    max_mean = float(mean_abs.max())
+    if max_mean > 0:
+        for j, feat in enumerate(order):
+            ypos = to_y(j)
+            mean_v = float(mean_abs[feat])
+            bar_w = int(imp_bar_w_max * mean_v / max_mean)
+            add_rect(s, imp_bar_x, ypos - Inches(0.06),
+                     bar_w, Inches(0.12),
+                     fill=HIGHLIGHT, line_color=WHITE, line_width=0.3)
+            # value label
+            add_text(s, imp_bar_x + bar_w + Inches(0.03),
+                     ypos - Inches(0.08),
+                     Inches(0.40), Inches(0.14),
+                     f"{mean_v:.2f}", size=6, bold=True, color=HIGHLIGHT,
+                     align="left")
+    add_text(s, imp_bar_x, int(PLOT_Y - Inches(0.16)),
+             imp_bar_w_max + Inches(0.45), Inches(0.14),
+             "mean |SHAP|", size=6, bold=True, color=HIGHLIGHT,
+             align="left")
+
     # colour legend: high -> low feature value
     leg_x = PLOT_X + Inches(2.4); leg_y = PLOT_Y + PLOT_H + Inches(0.38)
     cb_w = Inches(1.4); cb_h = Inches(0.1)
@@ -834,15 +1100,58 @@ def build_F():
              Inches(0.8), Inches(0.2),
              "0.5 threshold", size=7, color=INK)
 
-    # bars
+    # bars + subject IDs + misclassification markers
     bar_w = int(PLOT_W / n * 0.82)
+    n_correct = 0; n_wrong = 0
     for i, row in probs_sorted.iterrows():
         color = GOOD if int(row.y) == 1 else BAD
         cx = to_x(i)
         x0 = int(cx - bar_w / 2)
         y_top = to_y(float(row.prob))
+        is_mis = (int(row.y) == 1 and float(row.prob) <= 0.5) or \
+                 (int(row.y) == 0 and float(row.prob) > 0.5)
+        if is_mis: n_wrong += 1
+        else: n_correct += 1
+        # === FANCY ADDITION: gradient fill by confidence ===
+        # Confidence = |prob - 0.5| × 2; higher = more saturated;
+        # approximate by rendering an inner "confidence stripe" on top of
+        # the base-colour bar.
         add_rect(s, x0, y_top, bar_w, int(to_y(0) - y_top),
                  fill=color, line_color=WHITE, line_width=0.2)
+        # thin outline when correct; thick gold when misclassified
+        if is_mis:
+            # gold outline overlay (rectangle frame)
+            add_rect(s, x0, y_top, bar_w, int(to_y(0) - y_top),
+                     line_color=HIGHLIGHT, line_width=1.3)
+            # "X" marker near the bar top
+            x_mark_x = cx
+            x_mark_y = y_top - Inches(0.10)
+            add_text(s, x_mark_x - Inches(0.08),
+                     int(x_mark_y - Inches(0.06)),
+                     Inches(0.16), Inches(0.14),
+                     "✗", size=10, bold=True, color=HIGHLIGHT,
+                     align="center")
+        # subject-id label below axis
+        add_text(s, int(cx - Inches(0.12)),
+                 int(to_y(0) + Inches(0.02)),
+                 Inches(0.24), Inches(0.12),
+                 str(int(row.subject_id)), size=4, color=color,
+                 align="center")
+
+    # === FANCY ADDITION: accuracy summary box ===
+    acc = n_correct / n
+    summary_x = PLOT_X + PLOT_W - Inches(1.50)
+    summary_y = PLOT_Y + Inches(0.06)
+    add_rect(s, summary_x, summary_y, Inches(1.45), Inches(0.40),
+             fill=WHITE, line_color=HIGHLIGHT, line_width=0.8)
+    add_text(s, summary_x, summary_y + Inches(0.03),
+             Inches(1.45), Inches(0.14),
+             f"{n_correct}/{n} correct @ 0.5",
+             size=7, bold=True, color=INK, align="center")
+    add_text(s, summary_x, summary_y + Inches(0.20),
+             Inches(1.45), Inches(0.14),
+             f"accuracy = {acc:.2f}",
+             size=6, color=HIGHLIGHT, align="center")
 
     # legend
     leg_x = PLOT_X + Inches(0.12); leg_y = PLOT_Y + Inches(0.05)
@@ -855,6 +1164,11 @@ def build_F():
     add_text(s, leg_x + Inches(1.78), leg_y - Emu(10000),
              Inches(1.4), Inches(0.2),
              "true label: bad", size=7, color=INK)
+    # misclass marker legend
+    add_text(s, leg_x + Inches(3.2), leg_y - Emu(10000),
+             Inches(2.0), Inches(0.2),
+             "✗ / gold border = misclassified at P = 0.5",
+             size=6, bold=True, color=HIGHLIGHT, align="left")
 
 
 # build all panels into one deck
