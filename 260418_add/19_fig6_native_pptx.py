@@ -253,225 +253,261 @@ prs_main = Presentation()
 
 
 def build_A():
-    """2x2 grid of paired pre->post composite-z spaghetti plots."""
+    """Oriented-Δ distribution plot: single axis, Δ × sign(predicted
+    direction), 4 factors × 2 groups side-by-side with IQR box +
+    median diamond + jittered hollow points. Shaded predicted-direction
+    zone above zero makes the target-engagement message visually
+    immediate; good/bad strips sitting at overlapping heights make the
+    MW-NS message visually immediate; EMT good gold star marks the
+    only composite-level nominal significance; top-right badge reports
+    the 40/48 aggregate."""
     s = new_slide(prs_main)
     draw_panel_letter(s, "A")
 
-    # common y range: pool composite deltas and pre/post values to get
-    # a comfortable symmetric range per factor
-    layout = {
-        # (factor key, row, col)
-        "DSB_HDR_repair": (0, 0),
-        "Tumor_cellcycle": (0, 1),
-        "E2F_MYC_cellcycle": (1, 0),
-        "EMT": (1, 1),
-    }
+    # ---- plot area
+    px = Inches(0.95); py = Inches(0.55)
+    pw = Inches(4.95); ph = Inches(3.00)
 
-    grid_ox = Inches(0.75)
-    grid_oy = Inches(0.50)
-    sub_w = Inches(2.55)
-    sub_h = Inches(1.55)
-    col_gap = Inches(0.45)
-    row_gap = Inches(0.52)
-
+    # ---- data preparation: oriented Δ per subject per factor
+    #   oriented_Δ = Δ × (+1 if pred=up, -1 if pred=down)
+    #   i.e. positive = moved in predicted direction
+    records = []
     for fname, pretty, pred in FACTORS:
-        row, col = layout[fname]
-        px = grid_ox + col * (sub_w + col_gap)
-        py = grid_oy + row * (sub_h + row_gap)
+        sign_mul = -1 if pred == "down" else +1
+        sub = comp[comp.factor == fname].copy()
+        sub["oriented_delta"] = sub["delta"] * sign_mul
+        sub["factor"] = fname
+        records.append(sub)
+    oriented = pd.concat(records, ignore_index=True)
 
-        sub = comp[comp.factor == fname].sort_values(
-            ["response_bin", "subject_id"])
+    y_values = oriented["oriented_delta"].values
+    y_abs_max = max(3.5, float(np.ceil(np.max(np.abs(y_values)) * 1.05)))
+    y_lo, y_hi = -y_abs_max, y_abs_max
 
-        # per-factor y range (symmetric)
-        vals = np.concatenate([sub["pre"].values, sub["post"].values])
-        y_span = max(3.0, float(np.ceil(np.max(np.abs(vals)))))
-        y_lo, y_hi = -y_span, y_span
+    def ty(v):
+        return int(py + ph - (v - y_lo) / (y_hi - y_lo) * ph)
 
-        # mini axes: x from pre(0) to post(1), y from -y_span to +y_span
-        # use inner plot area margins
-        ax_x = px + Inches(0.42)
-        ax_y = py + Inches(0.08)
-        ax_w = sub_w - Inches(0.52)
-        ax_h = sub_h - Inches(0.45)
+    # ---- x positioning: 4 factor centers, with good / bad strip offset
+    n_fac = len(FACTORS)
+    group_w = pw / n_fac
+    strip_off = Inches(0.28)
+    center_x = [px + (i + 0.5) * group_w for i in range(n_fac)]
+    good_x = [c - strip_off for c in center_x]
+    bad_x = [c + strip_off for c in center_x]
 
-        def tx(v): return int(ax_x + (v) * ax_w)
-        def ty(v):
-            return int(ax_y + ax_h - (v - y_lo) / (y_hi - y_lo) * ax_h)
+    # =================================================================
+    # 1. Shaded "predicted direction" zone (above zero)
+    # =================================================================
+    SHADE_PRED = RGBColor(0xEE, 0xF6, 0xF3)   # very faint teal tint
+    SHADE_OPP = RGBColor(0xFB, 0xF1, 0xEE)    # very faint coral tint
+    add_rect(s, px, py, pw, ty(0) - py, fill=SHADE_PRED)
+    add_rect(s, px, ty(0), pw, py + ph - ty(0), fill=SHADE_OPP)
 
-        # spines
-        add_line(s, ax_x, ax_y, ax_x, ax_y + ax_h, LINE, 0.6)       # y
-        add_line(s, ax_x, ax_y + ax_h, ax_x + ax_w,
-                 ax_y + ax_h, LINE, 0.6)                            # x
+    # zone labels (discreet, italic, grey)
+    add_text(s, px + Inches(0.08), py + Inches(0.03),
+             Inches(3.5), Inches(0.18),
+             "↑ predicted direction  (target engaged)",
+             size=7, color=RGBColor(0x3A, 0x7A, 0x6B), align="left")
+    add_text(s, px + Inches(0.08), py + ph - Inches(0.20),
+             Inches(3.5), Inches(0.18),
+             "↓ opposite direction",
+             size=7, color=RGBColor(0x9B, 0x5A, 0x48), align="left")
 
-        # y-axis ticks
-        for yv in [y_lo, y_lo / 2, 0, y_hi / 2, y_hi]:
-            yy = ty(yv)
-            add_line(s, int(ax_x - Inches(0.04)), yy, int(ax_x), yy,
-                     LINE, 0.4)
-            add_text(s, int(ax_x - Inches(0.36)), yy - Inches(0.07),
-                     Inches(0.32), Inches(0.14),
-                     f"{yv:+.0f}" if abs(yv) >= 1 else f"{yv:.1f}",
-                     size=6, color=INK, align="right")
-        # x-axis tick labels
-        for xv, xlab in [(0, "pre"), (1, "post")]:
-            xx = tx(xv)
-            add_line(s, xx, int(ax_y + ax_h), xx,
-                     int(ax_y + ax_h + Inches(0.04)), LINE, 0.4)
-            add_text(s, xx - Inches(0.2), int(ax_y + ax_h + Inches(0.05)),
-                     Inches(0.4), Inches(0.14),
-                     xlab, size=7, color=INK, align="center")
+    # =================================================================
+    # 2. Axes (spines + ticks)
+    # =================================================================
+    add_line(s, px, py, px, py + ph, LINE, 0.6)                  # y spine
+    add_line(s, px, py + ph, px + pw, py + ph, LINE, 0.6)        # x spine
+    # y ticks at round values inside range
+    tick_step = 2 if y_abs_max > 3 else 1
+    yticks = list(range(-int(y_abs_max // tick_step * tick_step),
+                        int(y_abs_max // tick_step * tick_step) + 1,
+                        tick_step))
+    for yv in yticks:
+        yy = ty(yv)
+        add_line(s, px - Inches(0.05), yy, px, yy, LINE, 0.5)
+        add_text(s, px - Inches(0.5), yy - Inches(0.08),
+                 Inches(0.45), Inches(0.16),
+                 f"{yv:+d}" if yv != 0 else "0",
+                 size=7, color=INK, align="right")
 
-        # zero reference line (neutral for all factors)
-        add_line(s, tx(0), ty(0), tx(1), ty(0), GREY, 0.4, dashed=True)
+    # y-axis title (rotated)
+    yt = add_text(s, Inches(0.10), py + ph / 2 - Inches(0.95),
+                  Inches(0.40), Inches(1.9),
+                  "Oriented Δ (post − pre) · sign(predicted)",
+                  size=8, color=INK, align="center")
+    yt.rotation = -90
 
-        # sub-plot factor name (below the plot, below tick labels)
-        add_text(s, px, py + sub_h - Inches(0.22),
-                 sub_w, Inches(0.18),
-                 f"{pretty}   (pred: {pred})",
+    # =================================================================
+    # 3. Zero reference line (bold)
+    # =================================================================
+    add_line(s, px, ty(0), px + pw, ty(0), INK, 1.1)
+    add_text(s, px + pw + Inches(0.02), ty(0) - Inches(0.08),
+             Inches(0.55), Inches(0.16),
+             "no change",
+             size=6, color=INK, align="left")
+
+    # =================================================================
+    # 4. Per factor: good + bad strip with IQR box, median, jitter
+    # =================================================================
+    rng = np.random.default_rng(42)
+    LIGHT_GOOD = lighten(GOOD_HEX, 0.65)
+    LIGHT_BAD = lighten(BAD_HEX, 0.65)
+
+    for i, (fname, pretty, pred) in enumerate(FACTORS):
+        fac_sub = oriented[oriented.factor == fname]
+        # factor separator line (vertical faint) between factor groups
+        if i > 0:
+            sep_x = int(px + i * group_w)
+            add_line(s, sep_x, py + Inches(0.12), sep_x,
+                     py + ph - Inches(0.12),
+                     RGBColor(0xDD, 0xDD, 0xDD), 0.4, dashed=True)
+
+        for grp_name, strip_cx, fill_col, edge_col in [
+            ("good", good_x[i], LIGHT_GOOD, GOOD),
+            ("bad", bad_x[i], LIGHT_BAD, BAD),
+        ]:
+            grp = fac_sub[fac_sub.response_bin == grp_name]
+            vals = grp["oriented_delta"].values
+            q25, q75 = np.percentile(vals, [25, 75])
+            med = float(np.median(vals))
+
+            box_w = Inches(0.22)
+            half_w = box_w / 2
+
+            # IQR box
+            add_rect(s, strip_cx - half_w, ty(q75),
+                     box_w, max(ty(q25) - ty(q75), 2),
+                     fill=fill_col, line_color=edge_col, line_width=0.8)
+            # median bar across the box (thick)
+            add_line(s, strip_cx - half_w, ty(med),
+                     strip_cx + half_w, ty(med),
+                     edge_col, 2.0)
+            # filled diamond marker centred on the median (extra emphasis)
+            add_diamond(s, strip_cx, ty(med), Emu(40000),
+                        fill=edge_col, line_color=WHITE, line_width=1.0)
+
+            # jittered individual points
+            jitter_range = int(Inches(0.14))
+            for v in vals:
+                jx = strip_cx + rng.integers(-jitter_range // 2,
+                                             jitter_range // 2 + 1)
+                add_circle(s, jx, ty(v), Emu(22000),
+                           fill=WHITE, line_color=edge_col, line_width=0.9)
+
+            # below-axis annotations (under each strip)
+            sign_row = sign_df[(sign_df.factor == fname)
+                               & (sign_df.group == grp_name)].iloc[0]
+            n_pred = int(sign_row.n_predicted); n_tot = int(sign_row.n_total)
+            p_val = float(sign_row.sign_binomial_one_sided_P)
+            add_text(s, strip_cx - Inches(0.28),
+                     py + ph + Inches(0.03),
+                     Inches(0.56), Inches(0.14),
+                     f"{n_pred}/{n_tot}",
+                     size=7, bold=True, color=edge_col, align="center")
+            add_text(s, strip_cx - Inches(0.35),
+                     py + ph + Inches(0.17),
+                     Inches(0.70), Inches(0.13),
+                     f"P={p_val:.3f}",
+                     size=6, color=edge_col, align="center")
+
+            # gold star on EMT good 6/6 (the only composite-level
+            # nominal significance)
+            if fname == "EMT" and grp_name == "good":
+                add_text(s, strip_cx + Inches(0.13),
+                         ty(med) - Inches(0.11),
+                         Inches(0.22), Inches(0.22),
+                         "★", size=14, bold=True,
+                         color=HIGHLIGHT, align="center")
+
+        # factor name (below x-axis, centred on factor group)
+        arrow = "↓" if pred == "down" else "↑"
+        add_text(s, center_x[i] - group_w / 2 + Inches(0.05),
+                 py + ph + Inches(0.33),
+                 group_w - Inches(0.1), Inches(0.20),
+                 f"{pretty} {arrow}",
                  size=8, bold=True, color=INK, align="center")
 
-        # =================================================================
-        # ~~~ FANCY spaghetti composition (Nature/Cell paired-pre/post
-        # convention with group summaries):
-        #   (i)   very light individual spaghetti slopes beneath
-        #   (ii)  thin IQR rectangles at pre and post per group
-        #   (iii) hollow circle markers at each individual timepoint
-        #   (iv)  bold group-median slope on top, filled diamond markers
-        #   (v)   small raincloud-style jitter dots at pre and post
-        # =================================================================
-
-        good = sub[sub.response_bin == "good"]
-        bad = sub[sub.response_bin == "bad"]
-
-        def iqr(arr):
-            q25, q75 = np.percentile(arr, [25, 75])
-            return q25, q75
-
-        g_pre_q = iqr(good.pre.values); g_post_q = iqr(good.post.values)
-        b_pre_q = iqr(bad.pre.values); b_post_q = iqr(bad.post.values)
-        g_med_pre = float(np.median(good.pre.values))
-        g_med_post = float(np.median(good.post.values))
-        b_med_pre = float(np.median(bad.pre.values))
-        b_med_post = float(np.median(bad.post.values))
-
-        # (i) Individual slopes --- use LIGHT group colour so they form
-        # a soft underlay; post median trace will sit on top in full
-        # saturation.
-        LIGHT_GOOD = lighten(GOOD_HEX, 0.62)
-        LIGHT_BAD = lighten(BAD_HEX, 0.62)
-        for _, row_ in sub.iterrows():
-            color = LIGHT_GOOD if row_.response_bin == "good" else LIGHT_BAD
-            add_line(s, tx(0), ty(row_.pre), tx(1), ty(row_.post),
-                     color, 0.8)
-
-        # (ii) IQR rectangles at pre and post, per group --- a small
-        # vertical bar spanning 25th-75th percentile.
-        iqr_w = Inches(0.10)
-        half = iqr_w / 2
-        # good --- slight offset left at each timepoint to separate from bad
-        for xv, qlo, qhi in [(0, g_pre_q[0], g_pre_q[1]),
-                             (1, g_post_q[0], g_post_q[1])]:
-            cx = tx(xv) - int(iqr_w)
-            add_rect(s, cx - half, ty(qhi), iqr_w,
-                     max(ty(qlo) - ty(qhi), 2),
-                     fill=LIGHT_GOOD, line_color=GOOD, line_width=0.6)
-        for xv, qlo, qhi in [(0, b_pre_q[0], b_pre_q[1]),
-                             (1, b_post_q[0], b_post_q[1])]:
-            cx = tx(xv) + int(iqr_w)
-            add_rect(s, cx - half, ty(qhi), iqr_w,
-                     max(ty(qlo) - ty(qhi), 2),
-                     fill=LIGHT_BAD, line_color=BAD, line_width=0.6)
-
-        # (iii) hollow circle markers at each individual timepoint
-        # (on top of light slopes, below IQR rects? -- keep them on top
-        # so the reader can identify each subject)
-        for _, row_ in sub.iterrows():
-            color = GOOD if row_.response_bin == "good" else BAD
-            add_circle(s, tx(0), ty(row_.pre), Emu(22000),
-                       fill=WHITE, line_color=color, line_width=0.9)
-            add_circle(s, tx(1), ty(row_.post), Emu(22000),
-                       fill=WHITE, line_color=color, line_width=0.9)
-
-        # (iv) Bold group-median slope (GOOD + BAD) with filled diamond
-        # endpoints for strong visual emphasis.
-        add_line(s, tx(0) - int(iqr_w), ty(g_med_pre),
-                 tx(1) - int(iqr_w), ty(g_med_post), GOOD, 2.2)
-        add_diamond(s, tx(0) - int(iqr_w), ty(g_med_pre), Emu(42000),
-                    fill=GOOD, line_color=WHITE, line_width=1.2)
-        add_diamond(s, tx(1) - int(iqr_w), ty(g_med_post), Emu(42000),
-                    fill=GOOD, line_color=WHITE, line_width=1.2)
-        add_line(s, tx(0) + int(iqr_w), ty(b_med_pre),
-                 tx(1) + int(iqr_w), ty(b_med_post), BAD, 2.2)
-        add_diamond(s, tx(0) + int(iqr_w), ty(b_med_pre), Emu(42000),
-                    fill=BAD, line_color=WHITE, line_width=1.2)
-        add_diamond(s, tx(1) + int(iqr_w), ty(b_med_post), Emu(42000),
-                    fill=BAD, line_color=WHITE, line_width=1.2)
-
-        # =================================================================
-        # Annotation box with within-group sign counts + between-group MW
-        # =================================================================
-        g = sign_df[(sign_df.factor == fname) & (sign_df.group == "good")].iloc[0]
-        b = sign_df[(sign_df.factor == fname) & (sign_df.group == "bad")].iloc[0]
+        # MW P above each factor group (between good and bad)
         try:
             mw_p = float(stats_df[(stats_df.factor == fname)
                                   & (stats_df.level == "composite")]
                          .iloc[0]["mw_p"])
         except Exception:
             mw_p = float("nan")
-        arrow = "↓" if pred == "down" else "↑"
+        add_text(s, center_x[i] - Inches(0.45),
+                 py - Inches(0.02),
+                 Inches(0.9), Inches(0.16),
+                 f"MW P = {mw_p:.2f}",
+                 size=6, color=RGBColor(0x66, 0x66, 0x66),
+                 align="center")
 
-        ann_x = ax_x + Inches(0.05)
-        ann_y = ax_y + Inches(0.03)
-        box_w = Inches(1.35); box_h = Inches(0.58)
-        add_rect(s, ann_x, ann_y, box_w, box_h,
-                 fill=WHITE, line_color=GREY, line_width=0.3)
-        add_text(s, ann_x + Inches(0.04), ann_y + Emu(8000),
-                 box_w - Inches(0.08), Inches(0.16),
-                 f"good {arrow} : {int(g.n_predicted)}/{int(g.n_total)}  "
-                 f"(P = {float(g.sign_binomial_one_sided_P):.3f})",
-                 size=6, color=GOOD, bold=True, anchor="top", align="left")
-        add_text(s, ann_x + Inches(0.04), ann_y + Inches(0.18),
-                 box_w - Inches(0.08), Inches(0.16),
-                 f"bad  {arrow} : {int(b.n_predicted)}/{int(b.n_total)}  "
-                 f"(P = {float(b.sign_binomial_one_sided_P):.3f})",
-                 size=6, color=BAD, bold=True, anchor="top", align="left")
-        add_text(s, ann_x + Inches(0.04), ann_y + Inches(0.36),
-                 box_w - Inches(0.08), Inches(0.16),
-                 f"MW Δ (good vs bad) P = {mw_p:.2f}",
-                 size=6, color=INK, anchor="top", align="left")
+    # =================================================================
+    # 5. Aggregate badge (top-right, next to plot)
+    # =================================================================
+    # compute 40/48 from the oriented data
+    n_pred_total = int((oriented.oriented_delta > 0).sum())
+    n_total = int(len(oriented))
+    # binomial P(>= n_pred_total out of n_total under p = 0.5)
+    agg_p = float(stats.binom.sf(n_pred_total - 1, n_total, 0.5))
+    agg_p_txt = (f"P < 10⁻⁵" if agg_p < 1e-5
+                 else f"P = {agg_p:.2e}")
 
-        # Small direction arrow in the top-right corner of each sub-plot
-        arr_x = ax_x + ax_w - Inches(0.28)
-        arr_y = ax_y + Inches(0.12)
-        add_text(s, arr_x, arr_y - Inches(0.07),
-                 Inches(0.26), Inches(0.20),
-                 f"pred {arrow}", size=7, bold=True,
-                 color=RGBColor(0x66, 0x66, 0x66), align="center")
+    agg_x = px + pw - Inches(1.90)
+    agg_y = py - Inches(0.02)
+    agg_w = Inches(1.85); agg_h = Inches(0.26)
+    # shifted up out of the way; keeping it subtle so it doesn't steal
+    # attention from the plot itself
+    agg_x = Inches(4.45); agg_y = Inches(0.12)
+    agg_w = Inches(1.95); agg_h = Inches(0.33)
+    add_rect(s, agg_x, agg_y, agg_w, agg_h,
+             fill=WHITE, line_color=HIGHLIGHT, line_width=0.8)
+    add_text(s, agg_x + Inches(0.04), agg_y + Inches(0.02),
+             agg_w - Inches(0.08), Inches(0.14),
+             f"{n_pred_total} / {n_total} moved in predicted direction",
+             size=6, bold=True, color=INK, align="center", anchor="top")
+    add_text(s, agg_x + Inches(0.04), agg_y + Inches(0.16),
+             agg_w - Inches(0.08), Inches(0.14),
+             f"({100 * n_pred_total / n_total:.0f} %, binomial {agg_p_txt})",
+             size=6, color=HIGHLIGHT, align="center", anchor="top")
 
-    # Shared y-axis title (rotated, at far left)
-    yt = add_text(s, Inches(0.18), Inches(1.35), Inches(0.45), Inches(1.7),
-                  "Composite z-score (member ssGSEA mean)",
-                  size=8, color=INK, align="center")
-    yt.rotation = -90
-
-    # Legend at bottom of slide
-    leg_y = Inches(4.15)
-    add_circle(s, Inches(1.35), leg_y + Inches(0.06),
-               Emu(30000), fill=WHITE, line_color=GOOD, line_width=1.0)
-    add_line(s, Inches(1.45), leg_y + Inches(0.06),
-             Inches(1.75), leg_y + Inches(0.06), GOOD, 1.1)
-    add_circle(s, Inches(1.80), leg_y + Inches(0.06),
-               Emu(30000), fill=WHITE, line_color=GOOD, line_width=1.0)
-    add_text(s, Inches(1.88), leg_y - Emu(5000), Inches(0.9), Inches(0.18),
-             "good (n=6)", size=7, color=INK, align="left")
-    add_circle(s, Inches(3.2), leg_y + Inches(0.06),
-               Emu(30000), fill=WHITE, line_color=BAD, line_width=1.0)
-    add_line(s, Inches(3.3), leg_y + Inches(0.06),
-             Inches(3.6), leg_y + Inches(0.06), BAD, 1.1)
-    add_circle(s, Inches(3.65), leg_y + Inches(0.06),
-               Emu(30000), fill=WHITE, line_color=BAD, line_width=1.0)
-    add_text(s, Inches(3.73), leg_y - Emu(5000), Inches(0.9), Inches(0.18),
-             "bad (n=6)", size=7, color=INK, align="left")
+    # =================================================================
+    # 6. Legend row (bottom)
+    # =================================================================
+    leg_y = Inches(4.20)
+    # good swatch: light teal box + dark teal edge + hollow circle
+    add_rect(s, Inches(0.95), leg_y, Inches(0.22), Inches(0.13),
+             fill=LIGHT_GOOD, line_color=GOOD, line_width=0.8)
+    add_circle(s, Inches(1.06), leg_y + Inches(0.065),
+               Emu(18000), fill=WHITE, line_color=GOOD, line_width=0.8)
+    add_text(s, Inches(1.22), leg_y - Emu(10000),
+             Inches(0.95), Inches(0.16),
+             "good (n=6)",
+             size=7, color=INK, align="left")
+    # bad swatch
+    add_rect(s, Inches(2.25), leg_y, Inches(0.22), Inches(0.13),
+             fill=LIGHT_BAD, line_color=BAD, line_width=0.8)
+    add_circle(s, Inches(2.36), leg_y + Inches(0.065),
+               Emu(18000), fill=WHITE, line_color=BAD, line_width=0.8)
+    add_text(s, Inches(2.52), leg_y - Emu(10000),
+             Inches(0.95), Inches(0.16),
+             "bad (n=6)",
+             size=7, color=INK, align="left")
+    # star legend
+    add_text(s, Inches(3.60), leg_y - Emu(10000),
+             Inches(0.25), Inches(0.18),
+             "★", size=11, bold=True, color=HIGHLIGHT, align="left")
+    add_text(s, Inches(3.80), leg_y - Emu(10000),
+             Inches(2.6), Inches(0.16),
+             "binomial P < 0.05 (EMT good 6/6, P = 0.016)",
+             size=7, color=INK, align="left")
+    # box/median/diamond legend
+    add_text(s, Inches(0.95), leg_y + Inches(0.18),
+             Inches(5.3), Inches(0.14),
+             "Box = IQR (25th–75th percentile)  │  "
+             "filled diamond = group median  │  "
+             "hollow circle = individual paired subject (n=12, 6+6)",
+             size=6, color=RGBColor(0x55, 0x55, 0x55), align="left")
 
 
 def build_B():
