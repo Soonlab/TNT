@@ -502,168 +502,200 @@ def build_A():
 
 
 # -------------------------------------------------------------------
-# Panel B --- Paired pre→post spaghetti (2x2 grid: 4 key features)
+# Panel B --- Oriented-Δ distribution for all 9 cascade features
+# (single-axis, per-feature scale-normalised; Fig 6A-style)
 # -------------------------------------------------------------------
 def build_B():
     s = new_slide(prs_main)
     draw_panel_letter(s, "B")
 
-    features_b = ["Treg", "MHC_II", "CD8_exhaustion", "IGH_n"]
-    labels_b = {"Treg": "Treg signature (★ between-group robust)",
-                "MHC_II": "MHC-II signature",
-                "CD8_exhaustion": "CD8 exhaustion",
-                "IGH_n": "IGH clonotype count (B-cell)"}
+    # Plot area
+    px = Inches(0.80); py = Inches(0.55)
+    pw = Inches(5.50); ph = Inches(3.00)
 
-    grid_ox = Inches(0.70); grid_oy = Inches(0.40)
-    sub_w = Inches(2.70); sub_h = Inches(1.70)
-    col_gap = Inches(0.30); row_gap = Inches(0.25)
+    features_b = CASCADE_FEATURES  # all 9
+    # Predicted direction per feature (for orientation):
+    #  clearance features: predicted = decrease (down)
+    #  immune features: predicted = increase (up)
+    PREDICTED = {
+        "SBS5": "down", "missense": "down",
+        "neo_binders": "down", "neo_sites": "down",
+        "MHC_II": "up", "CD8_exhaustion": "up", "Treg": "up",
+        "IGH_n": "up", "TRB_shannon": "up",
+    }
 
-    LIGHT_GOOD = lighten(GOOD_HEX, 0.62)
-    LIGHT_BAD = lighten(BAD_HEX, 0.62)
-
-    for idx, feat in enumerate(features_b):
-        r, c = idx // 2, idx % 2
-        px = grid_ox + c * (sub_w + col_gap)
-        py = grid_oy + r * (sub_h + row_gap)
-
-        # data
-        sub = paired_long[paired_long.feature == feat].copy()
-        # drop subjects with NaN
-        sub = sub.dropna(subset=["pre", "post"])
-
-        all_vals = np.concatenate([sub.pre.values, sub.post.values])
-        if feat == "IGH_n":
-            y_min = 0
-            y_max = float(np.max(all_vals)) * 1.10
-        else:
-            y_span = max(1.5, float(np.max(np.abs(all_vals))) * 1.10)
-            y_min, y_max = -y_span, y_span
-
-        # inner axes
-        ax_x = px + Inches(0.55); ax_y = py + Inches(0.08)
-        ax_w = sub_w - Inches(0.65); ax_h = sub_h - Inches(0.45)
-
-        def tx(v): return _i(ax_x + v * ax_w)
-        def ty(v): return _i(ax_y + ax_h -
-                              (v - y_min) / (y_max - y_min) * ax_h)
-
-        # spines
-        add_line(s, ax_x, ax_y, ax_x, ax_y + ax_h, LINE, 0.5)
-        add_line(s, ax_x, ax_y + ax_h, ax_x + ax_w,
-                 ax_y + ax_h, LINE, 0.5)
-
-        # x tick labels
-        add_text(s, tx(0) - Inches(0.17), _i(ax_y + ax_h + Inches(0.02)),
-                 Inches(0.34), Inches(0.13),
-                 "pre", size=7, color=INK, align="center")
-        add_text(s, tx(1) - Inches(0.18), _i(ax_y + ax_h + Inches(0.02)),
-                 Inches(0.36), Inches(0.13),
-                 "post", size=7, color=INK, align="center")
-
-        # y ticks
-        for yv in [y_min, (y_min + y_max) / 2, y_max]:
-            yy = ty(yv)
-            add_line(s, _i(ax_x - Inches(0.04)), yy,
-                     ax_x, yy, LINE, 0.4)
-            if feat == "IGH_n":
-                lab = f"{int(yv)}"
-            else:
-                lab = f"{yv:+.1f}" if abs(yv) >= 1 else f"{yv:.1f}"
-            add_text(s, _i(ax_x - Inches(0.45)), yy - Inches(0.08),
-                     Inches(0.40), Inches(0.14),
-                     lab, size=5, color=INK, align="right")
-
-        # zero reference (only for z-score features)
-        if feat != "IGH_n":
-            add_line(s, ax_x, ty(0), ax_x + ax_w, ty(0),
-                     GREY, 0.3, dashed=True)
-
-        # faint individual slopes
-        for _, row in sub.iterrows():
-            c_col = LIGHT_GOOD if row.response == "good" else LIGHT_BAD
-            add_line(s, tx(0), ty(row.pre), tx(1), ty(row.post),
-                     c_col, 0.8)
-
-        # hollow circle markers
-        for _, row in sub.iterrows():
-            col = GOOD if row.response == "good" else BAD
-            add_circle(s, tx(0), ty(row.pre), Emu(22000),
-                       fill=WHITE, line_color=col, line_width=0.9)
-            add_circle(s, tx(1), ty(row.post), Emu(22000),
-                       fill=WHITE, line_color=col, line_width=0.9)
-
-        # group median slopes + diamonds
-        for grp in ["good", "bad"]:
-            grp_df = sub[sub.response == grp]
-            if len(grp_df) == 0:
-                continue
-            col = GOOD if grp == "good" else BAD
-            mpre = float(np.median(grp_df.pre.values))
-            mpost = float(np.median(grp_df.post.values))
-            add_line(s, tx(0), ty(mpre), tx(1), ty(mpost), col, 2.2)
-            add_diamond(s, tx(0), ty(mpre), Emu(40000),
-                        fill=col, line_color=WHITE, line_width=1.1)
-            add_diamond(s, tx(1), ty(mpost), Emu(40000),
-                        fill=col, line_color=WHITE, line_width=1.1)
-
-        # feature label below
-        add_text(s, px, _i(py + sub_h - Inches(0.22)),
-                 sub_w, Inches(0.16),
-                 labels_b[feat],
-                 size=7, bold=True,
-                 color=HIGHLIGHT if feat == "Treg" else INK,
-                 align="center")
-
-        # BCa summary inside plot (top-right corner)
+    # For each feature, build per-subject oriented Δ = (Δ × sign_pred) / scale
+    # where scale is the feature's max |CI bound| from BCa table (so all
+    # features share a common [-1, +1] comparable frame).
+    feat_data = {}
+    for feat in features_b:
         bca_row = bca[bca.feature == feat]
-        if not bca_row.empty:
-            r_ = bca_row.iloc[0]
-            txt_lines = [
-                f"g Δ {r_.good_delta_median:+.2f}  {r_.good_95CI}",
-                f"b Δ {r_.bad_delta_median:+.2f}  {r_.bad_95CI}",
-                f"MW P = {r_.MW_p:.3f}",
-            ]
-            if feat == "IGH_n":
-                txt_lines = [
-                    f"g Δ {r_.good_delta_median:+.0f}  {r_.good_95CI}",
-                    f"b Δ {r_.bad_delta_median:+.0f}  {r_.bad_95CI}",
-                    f"MW P = {r_.MW_p:.3f}",
-                ]
-            ann_x = ax_x + ax_w - Inches(1.55)
-            ann_y = ax_y + Inches(0.03)
-            add_rect(s, ann_x, ann_y, Inches(1.50), Inches(0.50),
-                     fill=WHITE, line_color=GREY, line_width=0.3)
-            for k, line in enumerate(txt_lines):
-                add_text(s, ann_x + Inches(0.03),
-                         ann_y + Inches(0.03 + k * 0.15),
-                         Inches(1.42), Inches(0.15),
-                         line, size=5,
-                         bold=(k == 2 and r_.MW_p < 0.05),
-                         color=(GOOD if "g Δ" in line else
-                                (BAD if "b Δ" in line else
-                                 (HIGHLIGHT if r_.MW_p < 0.05 else INK))),
-                         align="left", anchor="top")
+        if bca_row.empty:
+            continue
+        r_ = bca_row.iloc[0]
+        g_lo, g_hi = parse_ci(r_.good_95CI)
+        b_lo, b_hi = parse_ci(r_.bad_95CI)
+        scale = max(abs(g_lo), abs(g_hi), abs(b_lo), abs(b_hi),
+                    abs(r_.good_delta_median), abs(r_.bad_delta_median),
+                    1e-6)
+        sub = paired_long[paired_long.feature == feat].copy()
+        sub = sub.dropna(subset=["pre", "post"])
+        sub["delta"] = sub["post"] - sub["pre"]
+        sign_mul = -1 if PREDICTED[feat] == "down" else +1
+        sub["oriented_norm"] = (sub["delta"] * sign_mul) / scale
+        feat_data[feat] = (sub, scale, r_)
 
-    # legend (bottom)
-    leg_y = Inches(4.10)
-    add_diamond(s, Inches(0.70), leg_y + Inches(0.06), Emu(30000),
-                fill=GOOD, line_color=WHITE, line_width=1.0)
-    add_text(s, Inches(0.88), leg_y - Emu(5000),
-             Inches(1.30), Inches(0.16),
-             "good median (n=6)",
-             size=7, color=INK, align="left")
-    add_diamond(s, Inches(2.60), leg_y + Inches(0.06), Emu(30000),
-                fill=BAD, line_color=WHITE, line_width=1.0)
-    add_text(s, Inches(2.78), leg_y - Emu(5000),
-             Inches(1.30), Inches(0.16),
-             "bad median (n=6)",
-             size=7, color=INK, align="left")
-    add_circle(s, Inches(4.50), leg_y + Inches(0.06), Emu(22000),
-               fill=WHITE, line_color=LINE, line_width=0.9)
-    add_text(s, Inches(4.62), leg_y - Emu(5000),
-             Inches(1.80), Inches(0.16),
-             "individual subject pre/post",
-             size=7, color=INK, align="left")
+    # y-axis: oriented-Δ / scale, range roughly [-1.2, +1.4]
+    y_lo, y_hi = -1.25, 1.45
+
+    def ty(v):
+        return _i(py + ph - (v - y_lo) / (y_hi - y_lo) * ph)
+
+    # Faint zone shading
+    add_rect(s, px, py, pw, ty(0) - py,
+             fill=RGBColor(0xEE, 0xF6, 0xF3))  # pred-dir zone (teal tint)
+    add_rect(s, px, ty(0), pw, py + ph - ty(0),
+             fill=RGBColor(0xFB, 0xF1, 0xEE))  # opposite zone (coral tint)
+    # zone labels
+    add_text(s, _i(px + Inches(0.08)), _i(py + Inches(0.03)),
+             Inches(3.0), Inches(0.16),
+             "↑ predicted direction (clearance / infiltration / activation)",
+             size=6, color=RGBColor(0x3A, 0x7A, 0x6B),
+             italic=True, align="left")
+    add_text(s, _i(px + Inches(0.08)), _i(py + ph - Inches(0.18)),
+             Inches(3.0), Inches(0.16),
+             "↓ opposite direction",
+             size=6, color=RGBColor(0x9B, 0x5A, 0x48),
+             italic=True, align="left")
+
+    # Spines + ticks
+    add_line(s, px, py, px, py + ph, LINE, 0.6)
+    add_line(s, px, py + ph, px + pw, py + ph, LINE, 0.6)
+    for yv, lab in [(-1, "−1"), (-0.5, "−0.5"), (0, "0"),
+                    (0.5, "+0.5"), (1, "+1"), (1.4, "+1.4")]:
+        yy = ty(yv)
+        add_line(s, _i(px - Inches(0.05)), yy, px, yy, LINE, 0.5)
+        add_text(s, _i(px - Inches(0.45)), yy - Inches(0.08),
+                 Inches(0.40), Inches(0.14),
+                 lab, size=6, color=INK, align="right")
+    # rotated y title
+    yt = add_text(s, Inches(0.12),
+                  _i(py + ph / 2 - Inches(0.9)),
+                  Inches(0.35), Inches(1.8),
+                  "Oriented Δ  (post − pre) · sign(predicted)  ÷  scale",
+                  size=7, color=INK, align="center")
+    yt.rotation = -90
+
+    # Zero reference line
+    add_line(s, px, ty(0), px + pw, ty(0), INK, 1.1)
+    add_text(s, _i(px + pw + Inches(0.02)),
+             ty(0) - Inches(0.08),
+             Inches(0.55), Inches(0.16),
+             "no change", size=6, color=INK, align="left")
+
+    # Per-feature strips
+    n_feat = len(features_b)
+    group_w = pw / n_feat
+    strip_off = Inches(0.17)
+    rng = np.random.default_rng(3)
+    LIGHT_GOOD = lighten(GOOD_HEX, 0.66)
+    LIGHT_BAD = lighten(BAD_HEX, 0.66)
+
+    for i, feat in enumerate(features_b):
+        if feat not in feat_data:
+            continue
+        sub, scale, r_ = feat_data[feat]
+        center_x = _i(px + (i + 0.5) * group_w)
+        good_cx = center_x - _i(strip_off)
+        bad_cx = center_x + _i(strip_off)
+
+        for grp_name, cx, fill_col, edge_col in [
+            ("good", good_cx, LIGHT_GOOD, GOOD),
+            ("bad", bad_cx, LIGHT_BAD, BAD),
+        ]:
+            vals = sub[sub.response == grp_name]["oriented_norm"].values
+            if len(vals) == 0:
+                continue
+            q25, q75 = np.percentile(vals, [25, 75])
+            med = float(np.median(vals))
+            box_w = Inches(0.17)
+            hw = box_w / 2
+            # IQR box
+            add_rect(s, cx - hw, ty(q75),
+                     box_w, max(ty(q25) - ty(q75), 2),
+                     fill=fill_col, line_color=edge_col, line_width=0.7)
+            # median line (thick)
+            add_line(s, cx - hw, ty(med), cx + hw, ty(med),
+                     edge_col, 1.8)
+            # median diamond
+            add_diamond(s, cx, ty(med), Emu(32000),
+                        fill=edge_col, line_color=WHITE, line_width=1.0)
+            # jittered individual dots
+            jitter_range = _i(Inches(0.10))
+            for v in vals:
+                jx = cx + rng.integers(-jitter_range // 2,
+                                        jitter_range // 2 + 1)
+                add_circle(s, jx, ty(max(y_lo, min(y_hi, v))),
+                           Emu(16000), fill=WHITE,
+                           line_color=edge_col, line_width=0.7)
+
+        # Factor separator between features
+        if i > 0:
+            sep_x = _i(px + i * group_w)
+            add_line(s, sep_x, py + Inches(0.10),
+                     sep_x, py + ph - Inches(0.10),
+                     LT_GREY, 0.3, dashed=True)
+
+        # Feature label below axis (rotated for fit)
+        feat_lab = feat.replace("_", " ")
+        feat_color = (HIGHLIGHT if feat == "Treg" else
+                      GROUP_COLOR[FEAT_GROUP[feat]])
+        star = " ★" if feat == "Treg" else ""
+        lab = add_text(s, center_x - Inches(0.55),
+                       _i(py + ph + Inches(0.08)),
+                       Inches(1.1), Inches(0.55),
+                       f"{feat_lab}{star}",
+                       size=6, bold=(feat == "Treg"),
+                       color=feat_color, align="center")
+        lab.rotation = 35
+
+        # MW P below feature label
+        p_val = float(r_.MW_p)
+        p_color = HIGHLIGHT if p_val < 0.05 else RGBColor(0x66, 0x66, 0x66)
+        p_text = f"P={p_val:.3f}"
+        p_star = "★" if p_val < 0.05 else ""
+        add_text(s, center_x - Inches(0.40),
+                 _i(py + ph + Inches(0.60)),
+                 Inches(0.80), Inches(0.12),
+                 f"{p_text}{p_star}",
+                 size=5, bold=(p_val < 0.05),
+                 color=p_color, align="center")
+
+    # Legend
+    leg_y = Inches(4.15)
+    add_rect(s, Inches(0.80), leg_y, Inches(0.18), Inches(0.12),
+             fill=LIGHT_GOOD, line_color=GOOD, line_width=0.7)
+    add_diamond(s, Inches(0.89), leg_y + Inches(0.06), Emu(20000),
+                fill=GOOD, line_color=WHITE, line_width=0.6)
+    add_text(s, Inches(1.02), leg_y - Emu(5000),
+             Inches(0.9), Inches(0.16),
+             "good (n=6)", size=7, color=INK, align="left")
+    add_rect(s, Inches(2.00), leg_y, Inches(0.18), Inches(0.12),
+             fill=LIGHT_BAD, line_color=BAD, line_width=0.7)
+    add_diamond(s, Inches(2.09), leg_y + Inches(0.06), Emu(20000),
+                fill=BAD, line_color=WHITE, line_width=0.6)
+    add_text(s, Inches(2.22), leg_y - Emu(5000),
+             Inches(0.9), Inches(0.16),
+             "bad (n=6)", size=7, color=INK, align="left")
+    add_text(s, Inches(3.40), leg_y - Emu(5000),
+             Inches(2.9), Inches(0.16),
+             "Box = IQR  ·  diamond = group median  ·  circle = subject",
+             size=6, color=RGBColor(0x55, 0x55, 0x55), align="left")
+    # Treg star legend
+    add_text(s, Inches(3.40), leg_y + Inches(0.14),
+             Inches(2.9), Inches(0.14),
+             "★ Treg = only feature with CI strictly excluding zero",
+             size=6, italic=True, color=HIGHLIGHT, align="left")
 
 
 # -------------------------------------------------------------------
@@ -926,126 +958,180 @@ def build_D():
 
 
 # -------------------------------------------------------------------
-# Panel E --- Conceptual fishplot schematic of paired clonal dynamics
+# Panel E --- HLA class I LOH clone clearance
 # -------------------------------------------------------------------
 def build_E():
     s = new_slide(prs_main)
     draw_panel_letter(s, "E")
 
-    # Two mini-schematics: good-responder (top) and bad-responder (bottom)
-    # Each shows a stylised fishplot: pre / post clonal composition
+    # Load HLA-LOH paired data
+    loh_path = f"{DATA}/03_hla/loh_stricter/paired_LOH_change_strict.tsv"
+    loh = pd.read_csv(loh_path, sep="\t")
 
-    def fish(cx, cy, w, h, group_color, trajectory):
-        """Draw a stylised fishplot: symmetric envelope with internal
-        clone layers, pre on left, post on right.
-        trajectory = 'shrink' or 'persist'.
-        """
-        # outer envelope (overall tumor tissue)
-        n_pts = 24
-        xs = np.linspace(0, 1, n_pts)
-        if trajectory == "shrink":
-            env = 0.5 * (1 - 0.75 * xs)   # shrinks over time
+    # Plot area
+    px = Inches(1.45); py = Inches(0.65)
+    pw = Inches(4.05); ph = Inches(2.75)
+
+    # Y axis: LOH locus count (0 to 3)
+    y_lo, y_hi = -0.15, 3.15
+
+    def ty(v):
+        return _i(py + ph - (v - y_lo) / (y_hi - y_lo) * ph)
+
+    # X axis: pre (0.3) / post (0.7)
+    def tx(v):
+        return _i(px + v * pw)
+
+    # Spines + y ticks
+    add_line(s, px, py, px, py + ph, LINE, 0.6)
+    add_line(s, px, py + ph, px + pw, py + ph, LINE, 0.6)
+    for yv in [0, 1, 2, 3]:
+        yy = ty(yv)
+        add_line(s, _i(px - Inches(0.04)), yy, px, yy, LINE, 0.4)
+        add_text(s, _i(px - Inches(0.40)), yy - Inches(0.08),
+                 Inches(0.36), Inches(0.16),
+                 str(yv), size=7, color=INK, align="right")
+    # y title (rotated)
+    yt = add_text(s, _i(px - Inches(0.85)),
+                  _i(py + ph / 2 - Inches(1.0)),
+                  Inches(0.45), Inches(2.0),
+                  "HLA class I LOH loci per patient  (strict)",
+                  size=8, color=INK, align="center")
+    yt.rotation = -90
+
+    # X tick labels
+    for xv, lab in [(0.25, "pre-CRT"), (0.75, "post-CRT")]:
+        xx = tx(xv)
+        add_line(s, xx, _i(py + ph), xx,
+                 _i(py + ph + Inches(0.05)), LINE, 0.4)
+        add_text(s, xx - Inches(0.35), _i(py + ph + Inches(0.06)),
+                 Inches(0.70), Inches(0.16),
+                 lab, size=8, bold=True, color=INK, align="center")
+
+    # Zero reference
+    add_text(s, _i(px + pw + Inches(0.02)), ty(0) - Inches(0.08),
+             Inches(0.80), Inches(0.16),
+             "no LOH",
+             size=6, italic=True, color=RGBColor(0x66, 0x66, 0x66),
+             align="left")
+
+    # Highlight "clearance" arrows for subj 3 and 4 (both good responders,
+    # both strict LOH at baseline, both resolved by post-CRT)
+    focus_subs = loh[loh.loh_resolved == True].copy()
+    other_subs = loh[loh.loh_resolved == False].copy()
+
+    # Plot non-focus subjects as faint lines at y=0 (most have no LOH)
+    jitter = 0.015
+    rng = np.random.default_rng(8)
+    for _, row in other_subs.iterrows():
+        c_col = (lighten(GOOD_HEX, 0.78) if row.response_bin == "good"
+                 else lighten(BAD_HEX, 0.78))
+        # jitter slightly to avoid overlap
+        jx_pre = tx(0.25) + rng.integers(-_i(Inches(0.04)),
+                                          _i(Inches(0.04)) + 1)
+        jx_post = tx(0.75) + rng.integers(-_i(Inches(0.04)),
+                                          _i(Inches(0.04)) + 1)
+        # only plot if LOH value > 0 or we want to show all as faint dots
+        if row.pre_loh > 0 or row.post_loh > 0:
+            add_line(s, jx_pre, ty(row.pre_loh),
+                     jx_post, ty(row.post_loh),
+                     c_col, 0.7)
+            add_circle(s, jx_pre, ty(row.pre_loh), Emu(18000),
+                       fill=WHITE,
+                       line_color=(GOOD if row.response_bin == "good" else BAD),
+                       line_width=0.7)
+            add_circle(s, jx_post, ty(row.post_loh), Emu(18000),
+                       fill=WHITE,
+                       line_color=(GOOD if row.response_bin == "good" else BAD),
+                       line_width=0.7)
         else:
-            env = 0.5 * (1 - 0.10 * xs)   # persists
+            # plot as faint dots at 0 with slight jitter
+            add_circle(s, jx_pre, ty(0), Emu(12000),
+                       fill=c_col, line_color=None)
+            add_circle(s, jx_post, ty(0), Emu(12000),
+                       fill=c_col, line_color=None)
 
-        # top / bottom envelope vertices
-        top_pts = [(cx + v * w, cy - env[i] * h) for i, v in enumerate(xs)]
-        bot_pts = [(cx + v * w, cy + env[i] * h)
-                   for i, v in enumerate(reversed(xs))]
-        env_color = lighten(
-            (group_color[0], group_color[1], group_color[2]), 0.78)
-        add_freeform_poly(s, top_pts + bot_pts,
-                          fill=env_color, line_color=None)
+    # Plot focus subjects (subj 3, 4) with bold teal trajectories + labels
+    for _, row in focus_subs.iterrows():
+        sid = int(row.subject_id)
+        # slight offset so the two focus lines don't exactly overlap
+        x_offset = Inches(0.10) if sid == 3 else -Inches(0.10)
+        xp = tx(0.25) + _i(x_offset)
+        xq = tx(0.75) + _i(x_offset)
+        # arrow from pre to post
+        add_line(s, xp, ty(row.pre_loh), xq, ty(row.post_loh),
+                 GOOD, 2.2)
+        # filled diamonds at endpoints
+        add_diamond(s, xp, ty(row.pre_loh), Emu(45000),
+                    fill=GOOD, line_color=WHITE, line_width=1.2)
+        add_diamond(s, xq, ty(row.post_loh), Emu(45000),
+                    fill=GOOD, line_color=WHITE, line_width=1.2)
+        # subject label above pre endpoint
+        add_text(s, xp - Inches(0.40), ty(row.pre_loh) - Inches(0.22),
+                 Inches(0.80), Inches(0.18),
+                 f"subject #{sid}",
+                 size=8, bold=True, color=GOOD, align="center")
+        # value labels at endpoints
+        add_text(s, xp - Inches(0.22), ty(row.pre_loh) + Inches(0.02),
+                 Inches(0.20), Inches(0.14),
+                 f"{int(row.pre_loh)}",
+                 size=6, bold=True, color=GOOD, align="right")
+        add_text(s, xq + Inches(0.04), ty(row.post_loh) - Inches(0.07),
+                 Inches(0.20), Inches(0.14),
+                 f"{int(row.post_loh)}",
+                 size=6, bold=True, color=GOOD, align="left")
 
-        # internal clone layers (3 sub-clones)
-        for sub_i, (offset, color_mul) in enumerate([
-            (0.00, 0.35),
-            (0.55, 0.55),
-            (-0.55, 0.70),
-        ]):
-            clone_xs = xs
-            if trajectory == "shrink":
-                # sub-clone decays (eradication)
-                if sub_i == 0:
-                    clone_h = env * (1 - 0.95 * xs) * 0.35
-                elif sub_i == 1:
-                    clone_h = env * (1 - 0.50 * xs) * 0.22
-                else:
-                    clone_h = env * (1 - 0.20 * xs) * 0.18
-            else:
-                # sub-clone persists or even expands
-                if sub_i == 0:
-                    clone_h = env * 0.35
-                elif sub_i == 1:
-                    clone_h = env * 0.28
-                else:
-                    clone_h = env * 0.23
+    # Summary box in top-right corner
+    add_rounded_rect(s, Inches(4.85), Inches(0.55),
+                     Inches(1.50), Inches(0.85),
+                     fill=lighten(GOOD_HEX, 0.85),
+                     line_color=GOOD, line_width=0.8)
+    add_text(s, Inches(4.90), Inches(0.60),
+             Inches(1.40), Inches(0.14),
+             "Strict HLA-LOH",
+             size=6, bold=True, color=GOOD, align="center")
+    add_text(s, Inches(4.90), Inches(0.75),
+             Inches(1.40), Inches(0.14),
+             "pre: 2 / 16 good  ·  0 / 12 bad",
+             size=6, color=INK, align="center")
+    add_text(s, Inches(4.90), Inches(0.90),
+             Inches(1.40), Inches(0.14),
+             "post: 0 / 16 good",
+             size=6, color=INK, align="center")
+    add_text(s, Inches(4.90), Inches(1.05),
+             Inches(1.40), Inches(0.14),
+             "(both subjects",
+             size=5, italic=True,
+             color=RGBColor(0x55, 0x55, 0x55), align="center")
+    add_text(s, Inches(4.90), Inches(1.18),
+             Inches(1.40), Inches(0.14),
+             "cleared their LOH)",
+             size=5, italic=True,
+             color=RGBColor(0x55, 0x55, 0x55), align="center")
 
-            baseline = env * offset
-            top_p = [(cx + v * w, cy + (baseline[i] - clone_h[i]) * h)
-                     for i, v in enumerate(clone_xs)]
-            bot_p = [(cx + v * w, cy + (baseline[i] + clone_h[i]) * h)
-                     for i, v in enumerate(reversed(clone_xs))]
-            c = lighten(
-                (group_color[0], group_color[1], group_color[2]),
-                color_mul)
-            add_freeform_poly(s, top_p + bot_p,
-                              fill=c, line_color=None)
+    # Legend (bottom)
+    leg_y = Inches(3.75)
+    add_diamond(s, Inches(0.55), leg_y + Inches(0.06), Emu(35000),
+                fill=GOOD, line_color=WHITE, line_width=1.0)
+    add_text(s, Inches(0.72), leg_y - Emu(5000),
+             Inches(2.0), Inches(0.16),
+             "subj 3, 4 — strict LOH → resolved",
+             size=7, bold=True, color=GOOD, align="left")
+    add_circle(s, Inches(3.40), leg_y + Inches(0.06), Emu(14000),
+               fill=lighten(GOOD_HEX, 0.78), line_color=None)
+    add_text(s, Inches(3.50), leg_y - Emu(5000),
+             Inches(2.2), Inches(0.16),
+             "other subjects — no strict LOH detected",
+             size=7, color=RGBColor(0x55, 0x55, 0x55), align="left")
 
-        # pre / post markers + labels
-        add_line(s, _i(cx), _i(cy - h), _i(cx), _i(cy + h),
-                 INK, 0.5, dashed=True)
-        add_line(s, _i(cx + w), _i(cy - h), _i(cx + w), _i(cy + h),
-                 INK, 0.5, dashed=True)
-        add_text(s, _i(cx - Inches(0.25)), _i(cy + h + Inches(0.02)),
-                 Inches(0.50), Inches(0.14),
-                 "pre", size=7, color=INK, align="center")
-        add_text(s, _i(cx + w - Inches(0.25)),
-                 _i(cy + h + Inches(0.02)),
-                 Inches(0.50), Inches(0.14),
-                 "post", size=7, color=INK, align="center")
-
-    # good responder (top)
-    fish(Inches(1.60), Inches(1.30), Inches(3.20), Inches(0.75),
-         (GOOD_HEX[0], GOOD_HEX[1], GOOD_HEX[2]), "shrink")
-    add_text(s, Inches(0.25), Inches(1.05), Inches(1.30), Inches(0.18),
-             "Good responder",
-             size=8, bold=True, color=GOOD, align="left")
-    add_text(s, Inches(0.25), Inches(1.23), Inches(1.30), Inches(0.18),
-             "(n = 6)", size=6, color=GOOD, align="left", italic=True)
-    add_text(s, Inches(5.00), Inches(1.15), Inches(1.40), Inches(0.35),
-             "clone shrinkage +\neradication", size=6, italic=True,
-             color=GOOD, align="left", anchor="top")
-
-    # bad responder (bottom)
-    fish(Inches(1.60), Inches(2.80), Inches(3.20), Inches(0.75),
-         (BAD_HEX[0], BAD_HEX[1], BAD_HEX[2]), "persist")
-    add_text(s, Inches(0.25), Inches(2.55), Inches(1.30), Inches(0.18),
-             "Bad responder",
-             size=8, bold=True, color=BAD, align="left")
-    add_text(s, Inches(0.25), Inches(2.73), Inches(1.30), Inches(0.18),
-             "(n = 6)", size=6, color=BAD, align="left", italic=True)
-    add_text(s, Inches(5.00), Inches(2.65), Inches(1.40), Inches(0.35),
-             "clone persistence", size=6, italic=True,
-             color=BAD, align="left", anchor="top")
-
-    # bottom caption
-    add_text(s, Inches(0.15), Inches(3.85),
+    # caption
+    add_text(s, Inches(0.15), Inches(4.25),
              SLIDE_W - Inches(0.3), Inches(0.14),
-             "Conceptual schematic (not PyClone-VI output; full PyClone "
-             "detail in Supp Fig S16).",
+             "Bonferroni-corrected IMGT allele-count criterion "
+             "(|Δratio| ≥ 0.20, Fisher P < 0.01). Fisher P = 0.49 "
+             "between-group; anecdotal.",
              size=6, italic=True, color=RGBColor(0x55, 0x55, 0x55),
              align="center")
-    add_text(s, Inches(0.15), Inches(4.00),
-             SLIDE_W - Inches(0.3), Inches(0.14),
-             "PyClone-VI dominant-clone Δ trend: good −0.67 CCF vs "
-             "bad −0.15, Mann-Whitney P = 0.34 (trend, NS at n = 12).",
-             size=6, color=INK, align="center")
-    add_text(s, Inches(0.15), Inches(4.20),
-             SLIDE_W - Inches(0.3), Inches(0.14),
-             "Consistent with SBS5 and MHC-I neoantigen clearance "
-             "observed in Panel D.",
-             size=6, italic=True, color=HIGHLIGHT, align="center")
 
 
 # -------------------------------------------------------------------
@@ -1111,109 +1197,62 @@ def build_F():
              anchor="middle", italic=True)
 
     # ===========================================================
-    # Right half: convergence-null callout
+    # Right half: convergence-null callout  (minimal text — detailed
+    # interpretation goes in figure legend per Nature/Cell style)
     # ===========================================================
-    rx = Inches(3.40); ry = Inches(0.50)
-    rw = Inches(2.95); rh = Inches(3.30)
+    rx = Inches(3.40); ry = Inches(0.80)
+    rw = Inches(2.95); rh = Inches(2.50)
 
-    # outer bordered box with coral accent
+    # Outer callout box
     add_rect(s, rx, ry, rw, rh,
              fill=RGBColor(0xFB, 0xF0, 0xED),
              line_color=BAD, line_width=1.4)
 
-    # title strip
-    add_rect(s, rx, ry, rw, Inches(0.30),
-             fill=BAD, line_color=None)
-    add_text(s, rx, ry, rw, Inches(0.30),
-             "CONVERGENCE TEST — PRE-SPECIFIED, 36 PAIRS",
-             size=8, bold=True, color=WHITE, align="center",
+    # Question (one line, italic, small)
+    add_text(s, rx + Inches(0.15), ry + Inches(0.15),
+             rw - Inches(0.3), Inches(0.22),
+             "Baseline → cascade Δ ?",
+             size=9, italic=True, color=INK, align="center",
              anchor="middle")
-
-    # Big null result in the center
-    add_text(s, rx + Inches(0.15), ry + Inches(0.40),
-             rw - Inches(0.3), Inches(0.18),
-             "Q: does the Thread-1 baseline predictor",
-             size=7, italic=True, color=INK, align="center")
-    add_text(s, rx + Inches(0.15), ry + Inches(0.57),
-             rw - Inches(0.3), Inches(0.18),
-             "predict paired cascade Δ magnitude?",
-             size=7, italic=True, color=INK, align="center")
 
     # Big NO answer
-    add_text(s, rx + Inches(0.15), ry + Inches(0.80),
-             rw - Inches(0.3), Inches(0.40),
-             "NO.",
-             size=36, bold=True, color=BAD, align="center",
+    add_text(s, rx + Inches(0.15), ry + Inches(0.40),
+             rw - Inches(0.3), Inches(0.70),
+             "NO",
+             size=48, bold=True, color=BAD, align="center",
              anchor="middle")
 
-    # Statistic summary
-    add_text(s, rx + Inches(0.15), ry + Inches(1.30),
-             rw - Inches(0.3), Inches(0.14),
-             "0 / 36 pre-specified pairs P < 0.05",
-             size=8, bold=True, color=INK, align="center")
+    # Statistic summary (3 concise lines, no sub-boxes)
+    add_text(s, rx + Inches(0.15), ry + Inches(1.20),
+             rw - Inches(0.3), Inches(0.18),
+             "0 / 36 pairs   P < 0.05",
+             size=10, bold=True, color=INK, align="center")
     add_text(s, rx + Inches(0.15), ry + Inches(1.45),
-             rw - Inches(0.3), Inches(0.13),
-             "(1.8 expected by chance)  ·  0 / 36 at FDR < 0.10",
+             rw - Inches(0.3), Inches(0.16),
+             "DSB → CD8-cyt   r = −0.07",
+             size=8, color=BAD, bold=True, align="center")
+    # separator
+    add_line(s, rx + Inches(0.40), ry + Inches(1.80),
+             rx + rw - Inches(0.40), ry + Inches(1.80),
+             GREY, 0.5)
+    # one-line conclusion
+    add_text(s, rx + Inches(0.15), ry + Inches(1.95),
+             rw - Inches(0.3), Inches(0.22),
+             "Static ⊥ Dynamic",
+             size=13, bold=True, italic=True, color=GOOD,
+             align="center")
+    add_text(s, rx + Inches(0.15), ry + Inches(2.20),
+             rw - Inches(0.3), Inches(0.18),
+             "(orthogonal, not cascading)",
              size=6, italic=True, color=RGBColor(0x66, 0x66, 0x66),
              align="center")
 
-    # Headline pair box
-    add_rect(s, rx + Inches(0.18), ry + Inches(1.70),
-             rw - Inches(0.35), Inches(0.55),
-             fill=WHITE, line_color=BAD, line_width=0.8)
-    add_text(s, rx + Inches(0.22), ry + Inches(1.73),
-             rw - Inches(0.42), Inches(0.15),
-             "Headline pair",
-             size=5, bold=True, italic=True,
-             color=RGBColor(0x77, 0x77, 0x77), align="left", anchor="top")
-    add_text(s, rx + Inches(0.22), ry + Inches(1.85),
-             rw - Inches(0.42), Inches(0.16),
-             "DSB-repair baseline  →  CD8-cyt Δ",
-             size=7, bold=True, color=INK, align="center", anchor="top")
-    add_text(s, rx + Inches(0.22), ry + Inches(2.02),
-             rw - Inches(0.42), Inches(0.14),
-             "Spearman r = −0.07,  P = 0.83",
-             size=7, color=BAD, bold=True, align="center", anchor="top")
-
-    # Power note
-    add_text(s, rx + Inches(0.15), ry + Inches(2.36),
-             rw - Inches(0.3), Inches(0.14),
-             "Power retained (n = 12 detects |r| ≥ 0.55)",
-             size=6, italic=True, color=RGBColor(0x55, 0x55, 0x55),
-             align="center")
-    add_text(s, rx + Inches(0.15), ry + Inches(2.50),
-             rw - Inches(0.3), Inches(0.14),
-             "observed |r| < 0.20 → absence, not under-power",
-             size=6, italic=True, color=RGBColor(0x55, 0x55, 0x55),
-             align="center")
-
-    # Conclusion box
-    add_rect(s, rx + Inches(0.18), ry + Inches(2.72),
-             rw - Inches(0.35), Inches(0.48),
-             fill=lighten(GOOD_HEX, 0.85), line_color=GOOD, line_width=0.8)
-    add_text(s, rx + Inches(0.22), ry + Inches(2.74),
-             rw - Inches(0.42), Inches(0.14),
-             "Conclusion",
-             size=5, bold=True, italic=True, color=GOOD,
-             align="left", anchor="top")
-    add_text(s, rx + Inches(0.22), ry + Inches(2.85),
-             rw - Inches(0.42), Inches(0.34),
-             "Static baseline predictor ⊥ dynamic paired cascade. "
-             "The cascade is an observational phenomenology, NOT a "
-             "downstream of the baseline.",
-             size=6, color=INK, align="left", anchor="top")
-
-    # bottom strip message
+    # Minimal footer (one line only)
     add_text(s, Inches(0.15), Inches(3.95),
-             SLIDE_W - Inches(0.3), Inches(0.14),
-             "Two orthogonal biomarker layers: static pre-CRT (Figs 5, 9) "
-             "and dynamic paired RT-phase (Figs 6-8 and present panel) —",
-             size=6, italic=True, color=INK, align="center")
-    add_text(s, Inches(0.15), Inches(4.09),
-             SLIDE_W - Inches(0.3), Inches(0.14),
-             "complementary, not cascading.  "
-             "Two-layer clinical algorithm follows in Discussion.",
-             size=6, bold=True, italic=True, color=HIGHLIGHT, align="center")
+             SLIDE_W - Inches(0.3), Inches(0.16),
+             "Cascade is phenomenology, not a causal downstream of the "
+             "baseline predictor.",
+             size=7, italic=True, color=INK, align="center")
 
 
 build_A()
