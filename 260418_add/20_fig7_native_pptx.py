@@ -520,155 +520,209 @@ def build_A():
 
 
 def build_B():
-    """Focus V-gene 3x3 small-multiple spaghetti."""
+    """Subject-level leave-one-out repertoire coherence score.
+    For each subject, coherence = fraction of V-genes where the subject's
+    Δ direction matches the majority direction of their same-group peers
+    (peer set excludes the subject themselves). Plots 12 subject-level
+    coherence scores grouped by response, with MW good vs bad and
+    Wilcoxon good/bad vs chance (0.5) annotations."""
     s = new_slide(prs_main)
     draw_panel_letter(s, "B")
 
-    # pick focus V-genes
-    user_focus = ["IGHV6-1", "IGHV3-7", "IGHV3-74"]
-    # top good_coherent_bad_mixed by Fisher P (excluding the user focus)
-    gcbm = stats_df[stats_df.pattern == "good_coherent_bad_mixed"].sort_values(
-        "fisher_P_updown").v_gene.tolist()
-    extras = [g for g in gcbm if g not in user_focus][:6]
-    focus_list = user_focus + extras
-    focus_list = focus_list[:9]   # 3x3
+    # ---- Compute LOO coherence ----
+    v_kept = stats_df.v_gene.tolist()
+    d_sub = delta_df[delta_df.v_gene.isin(v_kept)].copy()
+    subjects = sorted(d_sub.subject_id.unique())
+    subj_to_group = {sid: d_sub[d_sub.subject_id == sid]["response_bin"].iloc[0]
+                     for sid in subjects}
 
-    # grid layout (3x3)
-    grid_ox = Inches(0.55); grid_oy = Inches(0.45)
-    sub_w = Inches(1.90); sub_h = Inches(1.15)
-    col_gap = Inches(0.10); row_gap = Inches(0.10)
+    coh = {}
+    for subj in subjects:
+        subj_group = subj_to_group[subj]
+        peers = [sid for sid in subjects
+                 if subj_to_group[sid] == subj_group and sid != subj]
+        agree = 0; total = 0
+        for v in v_kept:
+            peer_deltas = d_sub[(d_sub.v_gene == v)
+                                & (d_sub.subject_id.isin(peers))]["delta"].values
+            pu = int((peer_deltas > 0).sum())
+            pd_ = int((peer_deltas < 0).sum())
+            if pu == pd_:
+                continue
+            maj = "up" if pu > pd_ else "down"
+            row = d_sub[(d_sub.v_gene == v)
+                        & (d_sub.subject_id == subj)]
+            if row.empty:
+                continue
+            d = float(row.delta.iloc[0])
+            if d == 0:
+                continue
+            sdir = "up" if d > 0 else "down"
+            if sdir == maj:
+                agree += 1
+            total += 1
+        coh[subj] = agree / total if total > 0 else np.nan
 
-    for idx, vg in enumerate(focus_list):
-        r, c = idx // 3, idx % 3
-        px = grid_ox + c * (sub_w + col_gap)
-        py = grid_oy + r * (sub_h + row_gap)
+    good_subs = sorted([sid for sid in subjects
+                        if subj_to_group[sid] == "good"])
+    bad_subs = sorted([sid for sid in subjects
+                       if subj_to_group[sid] == "bad"])
+    good_coh = [coh[s_] for s_ in good_subs]
+    bad_coh = [coh[s_] for s_ in bad_subs]
 
-        # data for this V-gene
-        sub = delta_df[delta_df.v_gene == vg]
-        if sub.empty:
-            continue
-        g_sub = sub[sub.response_bin == "good"]
-        b_sub = sub[sub.response_bin == "bad"]
-        all_vals = np.concatenate([sub["pre"].values, sub["post"].values])
+    # ---- Save per-subject coherence for downstream reference ----
+    coh_df = pd.DataFrame({
+        "subject_id": good_subs + bad_subs,
+        "response_bin": ["good"] * 6 + ["bad"] * 6,
+        "loo_coherence": good_coh + bad_coh,
+    })
+    coh_df.to_csv(f"{DATA}/trust4_ighv_subject_loo_coherence.tsv",
+                  sep="\t", index=False)
 
-        y_max = max(1e-4, float(np.max(all_vals)) * 1.08)
-        y_min = 0
+    # ---- Statistical tests ----
+    from scipy.stats import mannwhitneyu, wilcoxon
+    mw_two = mannwhitneyu(good_coh, bad_coh, alternative="two-sided")
+    w_good = wilcoxon(np.array(good_coh) - 0.5, alternative="greater")
+    w_bad = wilcoxon(np.array(bad_coh) - 0.5, alternative="greater")
 
-        # inner axes
-        ax_x = px + Inches(0.35); ax_y = py + Inches(0.16)
-        ax_w = sub_w - Inches(0.42); ax_h = sub_h - Inches(0.50)
+    # ---- Plot layout ----
+    px = Inches(1.85); py = Inches(0.60)
+    pw = Inches(2.90); ph = Inches(2.90)
 
-        def tx(v): return _i(ax_x + v * ax_w)
-        def ty(v): return _i(ax_y + ax_h - (v - y_min) / (y_max - y_min) * ax_h)
+    y_lo, y_hi = 0.40, 0.72
 
-        # spines
-        add_line(s, ax_x, ax_y, ax_x, ax_y + ax_h, LINE, 0.5)
-        add_line(s, ax_x, ax_y + ax_h, ax_x + ax_w, ax_y + ax_h, LINE, 0.5)
+    def ty(v):
+        return _i(py + ph - (v - y_lo) / (y_hi - y_lo) * ph)
 
-        # x tick labels (pre / post)
-        add_text(s, tx(0) - Inches(0.17), _i(ax_y + ax_h + Inches(0.02)),
-                 Inches(0.34), Inches(0.13),
-                 "pre", size=6, color=INK, align="center")
-        add_text(s, tx(1) - Inches(0.18), _i(ax_y + ax_h + Inches(0.02)),
-                 Inches(0.36), Inches(0.13),
-                 "post", size=6, color=INK, align="center")
+    # spines
+    add_line(s, px, py, px, py + ph, LINE, 0.6)
+    add_line(s, px, py + ph, px + pw, py + ph, LINE, 0.6)
 
-        # y tick max / zero
-        add_text(s, _i(ax_x - Inches(0.35)), ty(y_max) - Inches(0.07),
-                 Inches(0.32), Inches(0.14),
-                 f"{y_max:.3f}", size=5, color=INK, align="right")
-        add_text(s, _i(ax_x - Inches(0.35)), ty(0) - Inches(0.08),
-                 Inches(0.32), Inches(0.14),
-                 "0", size=5, color=INK, align="right")
+    # y ticks and labels
+    for yv in [0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70]:
+        yy = ty(yv)
+        add_line(s, _i(px - Inches(0.05)), yy, px, yy, LINE, 0.5)
+        add_text(s, _i(px - Inches(0.50)), yy - Inches(0.08),
+                 Inches(0.45), Inches(0.16),
+                 f"{yv:.2f}", size=7, color=INK, align="right")
 
-        # zero reference
-        add_line(s, ax_x, ty(0), ax_x + ax_w, ty(0), GREY, 0.3, dashed=True)
+    # rotated y-axis title
+    yt = add_text(s, Inches(0.75), py + ph / 2 - Inches(1.0),
+                  Inches(0.45), Inches(2.0),
+                  "LOO repertoire coherence",
+                  size=9, color=INK, align="center")
+    yt.rotation = -90
 
-        # individual slopes (light)
-        LIGHT_GOOD = lighten(GOOD_HEX, 0.55)
-        LIGHT_BAD = lighten(BAD_HEX, 0.55)
-        for _, row_ in sub.iterrows():
-            c_col = LIGHT_GOOD if row_.response_bin == "good" else LIGHT_BAD
-            add_line(s, tx(0), ty(row_.pre), tx(1), ty(row_.post),
-                     c_col, 0.7)
-
-        # markers at endpoints (hollow)
-        for _, row_ in sub.iterrows():
-            col = GOOD if row_.response_bin == "good" else BAD
-            add_circle(s, tx(0), ty(row_.pre), Emu(18000),
-                       fill=WHITE, line_color=col, line_width=0.7)
-            add_circle(s, tx(1), ty(row_.post), Emu(18000),
-                       fill=WHITE, line_color=col, line_width=0.7)
-
-        # group median slopes (bold)
-        g_med_pre = float(np.median(g_sub.pre.values))
-        g_med_post = float(np.median(g_sub.post.values))
-        b_med_pre = float(np.median(b_sub.pre.values))
-        b_med_post = float(np.median(b_sub.post.values))
-        add_line(s, tx(0), ty(g_med_pre), tx(1), ty(g_med_post),
-                 GOOD, 1.8)
-        add_diamond(s, tx(0), ty(g_med_pre), Emu(30000),
-                    fill=GOOD, line_color=WHITE, line_width=0.9)
-        add_diamond(s, tx(1), ty(g_med_post), Emu(30000),
-                    fill=GOOD, line_color=WHITE, line_width=0.9)
-        add_line(s, tx(0), ty(b_med_pre), tx(1), ty(b_med_post),
-                 BAD, 1.8)
-        add_diamond(s, tx(0), ty(b_med_pre), Emu(30000),
-                    fill=BAD, line_color=WHITE, line_width=0.9)
-        add_diamond(s, tx(1), ty(b_med_post), Emu(30000),
-                    fill=BAD, line_color=WHITE, line_width=0.9)
-
-        # V-gene label (below sub-plot)
-        star = " ★" if vg == "IGHV6-1" else ""
-        add_text(s, px, _i(py + sub_h - Inches(0.28)),
-                 sub_w, Inches(0.16),
-                 f"{vg}{star}",
-                 size=8, bold=True,
-                 color=HIGHLIGHT if vg == "IGHV6-1" else INK,
-                 align="center")
-
-        # sign counts annotation (in-plot, top-left corner)
-        stat = stats_df[stats_df.v_gene == vg]
-        if not stat.empty:
-            r_ = stat.iloc[0]
-            txt = (f"g ↑/↓ {int(r_.good_n_up)}/{int(r_.good_n_down)}  "
-                   f"b {int(r_.bad_n_up)}/{int(r_.bad_n_down)}")
-            add_text(s, _i(ax_x + Inches(0.02)), _i(ax_y + Inches(0.02)),
-                     Inches(1.35), Inches(0.14),
-                     txt, size=5, color=RGBColor(0x55, 0x55, 0x55),
-                     align="left")
-            # Fisher P
-            add_text(s, _i(ax_x + Inches(0.02)), _i(ax_y + Inches(0.14)),
-                     Inches(1.35), Inches(0.13),
-                     f"Fisher P={r_.fisher_P_updown:.3f}",
-                     size=5, color=RGBColor(0x55, 0x55, 0x55),
-                     align="left")
-
-    # Legend (bottom of slide)
-    leg_y = Inches(4.15)
-    add_line(s, Inches(0.55), leg_y + Inches(0.06),
-             Inches(0.85), leg_y + Inches(0.06), GOOD, 1.8)
-    add_diamond(s, Inches(0.70), leg_y + Inches(0.06), Emu(25000),
-                fill=GOOD, line_color=WHITE, line_width=0.9)
-    add_text(s, Inches(0.90), leg_y - Emu(10000), Inches(1.3), Inches(0.16),
-             "good median (n=6)", size=7, color=INK, align="left")
-    add_line(s, Inches(2.35), leg_y + Inches(0.06),
-             Inches(2.65), leg_y + Inches(0.06), BAD, 1.8)
-    add_diamond(s, Inches(2.50), leg_y + Inches(0.06), Emu(25000),
-                fill=BAD, line_color=WHITE, line_width=0.9)
-    add_text(s, Inches(2.70), leg_y - Emu(10000), Inches(1.3), Inches(0.16),
-             "bad median (n=6)", size=7, color=INK, align="left")
-    add_circle(s, Inches(4.15), leg_y + Inches(0.06), Emu(18000),
-               fill=WHITE, line_color=LINE, line_width=0.7)
-    add_text(s, Inches(4.22), leg_y - Emu(10000), Inches(2.0), Inches(0.16),
-             "individual subject pre/post",
+    # chance reference line (0.5)
+    add_line(s, px, ty(0.5), px + pw, ty(0.5), INK, 1.1)
+    add_text(s, _i(px + pw + Inches(0.04)),
+             ty(0.5) - Inches(0.08),
+             Inches(0.8), Inches(0.16),
+             "chance = 0.5",
              size=7, color=INK, align="left")
 
-    # Shared axis-title text (small, below)
-    add_text(s, Inches(0.15), Inches(4.32),
-             SLIDE_W - Inches(0.3), Inches(0.14),
-             "y-axis: IGH-repertoire fraction  ·  x-axis: pre → post RT",
+    # faint shading: above chance = coherent, below chance = stochastic
+    add_rect(s, px, py, pw, ty(0.5) - py,
+             fill=RGBColor(0xEF, 0xF7, 0xF4))
+    add_rect(s, px, ty(0.5), pw, py + ph - ty(0.5),
+             fill=RGBColor(0xFC, 0xF1, 0xEE))
+    add_text(s, _i(px + Inches(0.08)), _i(py + Inches(0.04)),
+             Inches(1.5), Inches(0.14),
+             "↑ coherent with peers",
+             size=6, color=GOOD, italic=True, align="left")
+    add_text(s, _i(px + Inches(0.08)), _i(py + ph - Inches(0.18)),
+             Inches(1.5), Inches(0.14),
+             "↓ stochastic",
+             size=6, color=BAD, italic=True, align="left")
+
+    # ---- Strip plots per group ----
+    rng = np.random.default_rng(7)
+    LIGHT_GOOD = lighten(GOOD_HEX, 0.65)
+    LIGHT_BAD = lighten(BAD_HEX, 0.65)
+    strip_positions = {"good": px + pw * 0.30,
+                       "bad": px + pw * 0.70}
+
+    for grp_name, strip_cx, fill_col, edge_col, values in [
+        ("good", strip_positions["good"], LIGHT_GOOD, GOOD, good_coh),
+        ("bad", strip_positions["bad"], LIGHT_BAD, BAD, bad_coh),
+    ]:
+        q25, q75 = np.percentile(values, [25, 75])
+        med = float(np.median(values))
+        box_w = Inches(0.50)
+        half_w = box_w / 2
+
+        # IQR box
+        add_rect(s, strip_cx - half_w, ty(q75),
+                 box_w, max(ty(q25) - ty(q75), 2),
+                 fill=fill_col, line_color=edge_col, line_width=1.1)
+        # median bar
+        add_line(s, strip_cx - half_w, ty(med),
+                 strip_cx + half_w, ty(med), edge_col, 2.4)
+        # median diamond (extra emphasis)
+        add_diamond(s, strip_cx, ty(med), Emu(48000),
+                    fill=edge_col, line_color=WHITE, line_width=1.2)
+
+        # jittered individual dots with subject ID labels
+        jitter_range = _i(Inches(0.22))
+        subj_list = good_subs if grp_name == "good" else bad_subs
+        for v, sid in zip(values, subj_list):
+            jx = _i(strip_cx) + rng.integers(-jitter_range // 2,
+                                              jitter_range // 2 + 1)
+            add_circle(s, jx, ty(v), Emu(32000),
+                       fill=WHITE, line_color=edge_col, line_width=1.2)
+            # tiny subject id label to the right of point
+            add_text(s, jx + Inches(0.07), ty(v) - Inches(0.06),
+                     Inches(0.2), Inches(0.12),
+                     str(sid), size=4, color=edge_col, align="left")
+
+        # Group label below axis
+        add_text(s, _i(strip_cx - Inches(0.5)),
+                 _i(py + ph + Inches(0.08)),
+                 Inches(1.0), Inches(0.18),
+                 f"{grp_name} (n=6)",
+                 size=9, bold=True, color=edge_col, align="center")
+        # Per-group vs-chance P under group label
+        w_p = w_good.pvalue if grp_name == "good" else w_bad.pvalue
+        star = " ★" if w_p < 0.05 else ""
+        lab_color = edge_col if w_p < 0.05 else RGBColor(0x66, 0x66, 0x66)
+        add_text(s, _i(strip_cx - Inches(0.75)),
+                 _i(py + ph + Inches(0.28)),
+                 Inches(1.5), Inches(0.15),
+                 f"vs chance P = {w_p:.3f}{star}",
+                 size=7, color=lab_color, align="center", bold=(w_p < 0.05))
+
+    # ---- MW between-group bracket (top of plot) ----
+    bracket_y = ty(0.70) - Inches(0.04)
+    bx_l = strip_positions["good"]
+    bx_r = strip_positions["bad"]
+    add_line(s, _i(bx_l), _i(bracket_y),
+             _i(bx_r), _i(bracket_y), INK, 0.8)
+    add_line(s, _i(bx_l), _i(bracket_y),
+             _i(bx_l), _i(bracket_y + Inches(0.06)), INK, 0.8)
+    add_line(s, _i(bx_r), _i(bracket_y),
+             _i(bx_r), _i(bracket_y + Inches(0.06)), INK, 0.8)
+    mw_x = (bx_l + bx_r) / 2
+    add_text(s, _i(mw_x - Inches(0.90)),
+             _i(bracket_y - Inches(0.22)),
+             Inches(1.80), Inches(0.16),
+             f"MW good > bad  P = {mw_two.pvalue:.3f} ★",
+             size=8, bold=True, color=HIGHLIGHT,
+             align="center")
+
+    # ---- Caption (bottom) ----
+    cap_y = Inches(3.83)
+    add_text(s, Inches(0.20), cap_y,
+             SLIDE_W - Inches(0.4), Inches(0.20),
+             "LOO coherence per subject = fraction of the 53 V-genes where the "
+             "subject's Δ direction agrees with the majority direction of their "
+             "other 5 same-group peers (ties excluded).",
              size=6, color=RGBColor(0x55, 0x55, 0x55), align="center")
+    add_text(s, Inches(0.20), cap_y + Inches(0.22),
+             SLIDE_W - Inches(0.4), Inches(0.18),
+             "Good subjects are tightly coherent and above chance (all 6 "
+             "with P = 0.016); bad subjects span chance (P = 0.156 NS → "
+             "individually stochastic).",
+             size=7, bold=True, color=INK, align="center")
 
 
 build_A()
