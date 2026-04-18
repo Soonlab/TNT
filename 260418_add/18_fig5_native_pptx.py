@@ -57,22 +57,46 @@ from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE, MSO_CONNECTOR
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from pptx.oxml.ns import qn
+from lxml import etree
+
+
+# ---------------------------------------------------------------------------
+# Shadow-removal helper --- PowerPoint's default theme adds a subtle soft
+# shadow to auto-shapes; we override that by inserting an empty <a:effectLst/>
+# into the shape's spPr. Called on every shape/connector/textbox we create.
+# ---------------------------------------------------------------------------
+def kill_shadow(shape):
+    elem = shape._element
+    spPr = elem.find(qn('p:spPr'))
+    if spPr is None:
+        return
+    # remove any inherited effectLst
+    for el in spPr.findall(qn('a:effectLst')):
+        spPr.remove(el)
+    # append empty effectLst --- overrides theme-level shadow
+    etree.SubElement(spPr, qn('a:effectLst'))
 
 OUT = "/data/data/TNT/analysis/260418_add/ppt"
 DATA = "/data/data/TNT/analysis/260418_add"
 os.makedirs(OUT, exist_ok=True)
 
 # ---------------------------------------------------------------------------
-# Style constants
+# Style constants --- project-wide TNT palette (fig2_v31_polish / fig3_v31 /
+# panels_v3): GOOD = deep teal #0a7d6e, BAD = deep coral #c53e1f.
 # ---------------------------------------------------------------------------
-GOOD = RGBColor(0x2E, 0x86, 0xAB)
-BAD = RGBColor(0xE6, 0x39, 0x46)
+GOOD = RGBColor(0x0A, 0x7D, 0x6E)
+BAD = RGBColor(0xC5, 0x3E, 0x1F)
 INK = RGBColor(0x22, 0x22, 0x22)
 LINE = RGBColor(0x33, 0x33, 0x33)
 GREY = RGBColor(0xBB, 0xBB, 0xBB)
 LT_GREY = RGBColor(0xDD, 0xDD, 0xDD)
-SHADE = RGBColor(0xCF, 0xDD, 0xEA)   # light blue for CI ribbon
+SHADE = RGBColor(0xC8, 0xDE, 0xD8)   # light teal for CI ribbon (matches GOOD)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+
+# HEX versions for ramps / interpolation
+GOOD_HEX = (0x0A, 0x7D, 0x6E)
+BAD_HEX = (0xC5, 0x3E, 0x1F)
 
 FONT = "Arial"
 
@@ -125,6 +149,7 @@ def add_text(slide, x, y, w, h, text, size=8, bold=False,
     r.font.size = Pt(size)
     r.font.bold = bool(bold)
     r.font.color.rgb = color
+    kill_shadow(tb)
     return tb
 
 
@@ -132,6 +157,7 @@ def add_line(slide, x1, y1, x2, y2, color=LINE, width=0.5):
     c = slide.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, x1, y1, x2, y2)
     c.line.color.rgb = color
     c.line.width = Pt(width)
+    kill_shadow(c)
     return c
 
 
@@ -148,6 +174,7 @@ def add_rect(slide, x, y, w, h, fill=None, line_color=None, line_width=0.5):
         shp.line.color.rgb = line_color
         shp.line.width = Pt(line_width)
     shp.shadow.inherit = False
+    kill_shadow(shp)
     return shp
 
 
@@ -165,6 +192,7 @@ def add_circle(slide, cx, cy, r, fill=None, line_color=None, line_width=0.5):
         shp.line.color.rgb = line_color
         shp.line.width = Pt(line_width)
     shp.shadow.inherit = False
+    kill_shadow(shp)
     return shp
 
 
@@ -328,82 +356,199 @@ def build_A():
     s = new_slide(prs)
     draw_panel_letter(s, "A")
 
-    n = len(feat_names)
-    cell_w = PLOT_W / n
-    cell_h = PLOT_H / n
+    # a wider slide for Panel A only --- heatmap + group strip + cbar +
+    # feature-group legend + winning-feature callouts need more horizontal
+    # space than the default 6.5 x 4.5 in inner plot area
+    # (we already set SLIDE_W/H globally; use a compact 3.1 x 3.1 in heatmap
+    #  with 1.4-in side stack for cbar + legend)
+    hm_x = Inches(0.95)
+    hm_y = Inches(0.55)
+    hm_w = Inches(3.1)
+    hm_h = Inches(3.1)
 
-    # colour ramp blue->white->red
+    n = len(feat_names)
+    cell_w = hm_w / n
+    cell_h = hm_h / n
+
+    # diverging ramp using project GOOD (deep teal) / BAD (deep coral)
     def ramp(v):
         v = max(-1.0, min(1.0, float(v)))
         if v >= 0:
+            # white -> BAD
             t = v
-            r = int(255 - t * (255 - 0xE6))
-            g = int(255 - t * (255 - 0x39))
-            b = int(255 - t * (255 - 0x46))
+            r = int(255 - t * (255 - BAD_HEX[0]))
+            g = int(255 - t * (255 - BAD_HEX[1]))
+            b = int(255 - t * (255 - BAD_HEX[2]))
         else:
+            # white -> GOOD
             t = -v
-            r = int(255 - t * (255 - 0x2E))
-            g = int(255 - t * (255 - 0x86))
-            b = int(255 - t * (255 - 0xAB))
+            r = int(255 - t * (255 - GOOD_HEX[0]))
+            g = int(255 - t * (255 - GOOD_HEX[1]))
+            b = int(255 - t * (255 - GOOD_HEX[2]))
         return RGBColor(r, g, b)
 
     for i in range(n):
         for j in range(n):
-            x = int(PLOT_X + j * cell_w)
-            yy = int(PLOT_Y + i * cell_h)
+            x = int(hm_x + j * cell_w)
+            yy = int(hm_y + i * cell_h)
             add_rect(s, x, yy, int(cell_w), int(cell_h),
                      fill=ramp(corr.iloc[i, j]))
     # frame
-    add_rect(s, PLOT_X, PLOT_Y, PLOT_W, PLOT_H, line_color=LINE, line_width=0.6)
+    add_rect(s, hm_x, hm_y, hm_w, hm_h, line_color=LINE, line_width=0.6)
 
-    # brief feature-group bands on the top (categorical colour strip)
+    # feature-group mapping and palette
+    GROUP_PAL = [
+        ("DNA repair", RGBColor(0xA2, 0x4E, 0x78)),     # plum
+        ("Cell cycle", RGBColor(0xE3, 0x9A, 0x1E)),     # amber
+        ("EMT / hypoxia", RGBColor(0x5A, 0x82, 0x61)),  # moss
+        ("Immune", RGBColor(0x11, 0x8A, 0xB2)),         # cerulean
+        ("Genomic", RGBColor(0x55, 0x55, 0x55)),        # graphite
+        ("Other", RGBColor(0xAA, 0xAA, 0xAA)),          # grey
+    ]
+    GROUP_COLOR = {k: v for k, v in GROUP_PAL}
+
     def group_of(name):
-        if any(k in name for k in ["DNA", "HDR", "DSB", "DNA Repair"]):
-            return ("DNA repair", RGBColor(0xA2, 0x4E, 0x78))
-        if any(k in name for k in ["G2-M", "E2F", "Myc", "Cell Cycle"]):
-            return ("Cell cycle", RGBColor(0xE3, 0x9A, 0x1E))
-        if any(k in name for k in ["EMT", "Epithelial", "Hypoxia"]):
-            return ("EMT / hypoxia", RGBColor(0x5A, 0x82, 0x61))
+        if any(k in name for k in ["DNA", "HDR", "DSB", "Repair"]):
+            return "DNA repair"
+        if any(k in name for k in ["G2-M", "E2F", "Myc", "Cell Cycle",
+                                   "Tumor_cellcycle"]):
+            return "Cell cycle"
+        if any(k in name for k in ["EMT", "Epithelial", "Hypoxia", "Mak"]):
+            return "EMT / hypoxia"
         if any(k in name for k in ["CD8", "Tcell", "Bcell", "MHC", "IFN",
-                                   "TLS", "NLRC5", "TGF"]):
-            return ("Immune", RGBColor(0x2E, 0x86, 0xAB))
+                                   "TLS", "NLRC5", "TGF", "Antigen",
+                                   "cytotoxic", "infiltration"]):
+            return "Immune"
         if any(k in name for k in ["TMB", "SBS", "CIN", "MSI", "frac",
-                                   "MMR", "n_nonsyn"]):
-            return ("Genomic", RGBColor(0x55, 0x55, 0x55))
-        return ("Other", RGBColor(0xAA, 0xAA, 0xAA))
+                                   "MMR", "n_nonsyn", "Stemness"]):
+            return "Genomic"
+        return "Other"
 
-    strip_y = PLOT_Y - Inches(0.12)
+    # Group strips on top + on left
+    strip_top_y = hm_y - Inches(0.10)
+    strip_left_x = hm_x - Inches(0.10)
     for j, name in enumerate(feat_names):
-        _, c = group_of(name)
-        add_rect(s, int(PLOT_X + j * cell_w), strip_y,
+        g = group_of(name)
+        c = GROUP_COLOR[g]
+        # top strip (column = feature j)
+        add_rect(s, int(hm_x + j * cell_w), strip_top_y,
                  int(cell_w), Inches(0.08), fill=c)
+        # left strip (row = feature j, mirrors top because matrix is square)
+        add_rect(s, strip_left_x, int(hm_y + j * cell_h),
+                 Inches(0.08), int(cell_h), fill=c)
 
-    # colour-bar legend below the plot
-    cb_x = PLOT_X + Inches(1.4)
-    cb_y = PLOT_Y + PLOT_H + Inches(0.38)
-    cb_w = Inches(1.8)
-    cb_h = Inches(0.12)
-    n_steps = 32
-    for k in range(n_steps):
-        v = -1 + 2 * k / (n_steps - 1)
-        add_rect(s, int(cb_x + k * cb_w / n_steps), cb_y,
-                 int(cb_w / n_steps) + Emu(2000), cb_h, fill=ramp(v))
-    add_rect(s, cb_x, cb_y, cb_w, cb_h, line_color=LINE, line_width=0.4)
-    for v, lab in [(-1, "-1"), (0, "0"), (1, "+1")]:
-        xx = int(cb_x + (v + 1) / 2 * cb_w)
-        add_text(s, xx - Inches(0.1), cb_y + cb_h + Emu(20000),
-                 Inches(0.2), Inches(0.18), lab, size=6, color=INK,
-                 align="center")
-    add_text(s, cb_x - Inches(0.55), cb_y - Emu(30000), Inches(0.55),
-             cb_h + Inches(0.18), "Spearman ρ", size=7, color=INK,
-             align="right", anchor="middle")
-
-    # caption beneath the colourbar
-    add_text(s, Inches(0.15), PLOT_Y + PLOT_H + Inches(0.8),
-             SLIDE_W - Inches(0.3), Inches(0.24),
-             f"{n} integrated numeric features (CD8-proliferation removed); "
-             "top strip = feature group",
+    # X-axis ticks + numeric feature-index labels (every 5)
+    idx_ticks = [1, 5, 10, 15, 20, 25, 30]
+    for t in idx_ticks:
+        if t > n:
+            continue
+        xx = int(hm_x + (t - 0.5) * cell_w)
+        add_line(s, xx, int(hm_y + hm_h), xx,
+                 int(hm_y + hm_h + Inches(0.05)), LINE, 0.4)
+        add_text(s, xx - Inches(0.12), int(hm_y + hm_h + Inches(0.06)),
+                 Inches(0.24), Inches(0.16),
+                 str(t), size=6, color=INK, align="center")
+    add_text(s, hm_x, hm_y + hm_h + Inches(0.24),
+             hm_w, Inches(0.2), "Feature index (1–30)",
              size=8, color=INK, align="center")
+
+    # Y-axis ticks + numeric feature-index labels (every 5)
+    for t in idx_ticks:
+        if t > n:
+            continue
+        yy = int(hm_y + (t - 0.5) * cell_h)
+        add_line(s, int(hm_x - Inches(0.05)), yy,
+                 int(hm_x), yy, LINE, 0.4)
+        add_text(s, int(hm_x - Inches(0.25)), yy - Inches(0.07),
+                 Inches(0.17), Inches(0.14),
+                 str(t), size=6, color=INK, align="right")
+    # rotated y-axis title
+    ytitle = add_text(s, hm_x - Inches(0.85), hm_y + hm_h / 2 - Inches(0.6),
+                     Inches(0.65), Inches(1.2),
+                     "Feature index (1–30)",
+                     size=8, color=INK, align="center")
+    ytitle.rotation = -90
+
+    # Winning-feature annotations (4 features from the parsimonious model)
+    win_names = [
+        "DNA Double-Strand Break Repair R-HSA-5693532",
+        "frac_amp", "MHC_II", "MSI_pct",
+    ]
+    win_pretty = {
+        "DNA Double-Strand Break Repair R-HSA-5693532": "DSB repair",
+        "frac_amp": "Del. fraction",
+        "MHC_II": "MHC II",
+        "MSI_pct": "MSI %",
+    }
+    for w in win_names:
+        if w not in feat_names:
+            continue
+        idx = feat_names.index(w)
+        xx = int(hm_x + (idx + 0.5) * cell_w)
+        # arrow above the top strip
+        add_line(s, xx, int(hm_y - Inches(0.18)),
+                 xx, int(hm_y - Inches(0.10)), INK, 0.6)
+    # winning-feature tag list (condensed under group strip)
+    add_text(s, hm_x, hm_y - Inches(0.30), hm_w, Inches(0.12),
+             "★ 4 LASSO-selected features annotated above",
+             size=6, color=INK, align="center")
+
+    # =========================================================
+    # RIGHT SIDE STACK: colourbar + feature-group legend
+    # =========================================================
+    right_x = hm_x + hm_w + Inches(0.25)
+
+    # --- colourbar (Spearman rho) ---
+    cb_x = right_x
+    cb_y = hm_y + Inches(0.05)
+    cb_w = Inches(0.20)
+    cb_h = Inches(1.3)
+    n_steps = 40
+    for k in range(n_steps):
+        v = 1 - 2 * k / (n_steps - 1)
+        add_rect(s, cb_x, int(cb_y + k * cb_h / n_steps),
+                 cb_w, int(cb_h / n_steps) + Emu(2000), fill=ramp(v))
+    add_rect(s, cb_x, cb_y, cb_w, cb_h, line_color=LINE, line_width=0.4)
+    for v, lab in [(1, "+1"), (0.5, "+0.5"), (0, "0"),
+                   (-0.5, "−0.5"), (-1, "−1")]:
+        yy = int(cb_y + (1 - v) / 2 * cb_h)
+        add_line(s, cb_x + cb_w, yy, cb_x + cb_w + Inches(0.04),
+                 yy, LINE, 0.4)
+        add_text(s, cb_x + cb_w + Inches(0.05), yy - Inches(0.07),
+                 Inches(0.32), Inches(0.14),
+                 lab, size=6, color=INK, align="left")
+    # title for cbar
+    add_text(s, cb_x - Inches(0.1), cb_y - Inches(0.20),
+             cb_w + Inches(0.7), Inches(0.18),
+             "Spearman ρ", size=7, color=INK, align="left")
+    # palette direction note
+    add_text(s, cb_x - Inches(0.1), cb_y - Inches(0.08),
+             cb_w + Inches(0.7), Inches(0.12),
+             "teal = good-aligned, coral = bad-aligned",
+             size=5, color=RGBColor(0x55, 0x55, 0x55), align="left")
+
+    # --- feature-group legend below colourbar ---
+    lg_x = right_x
+    lg_y = cb_y + cb_h + Inches(0.25)
+    add_text(s, lg_x, lg_y - Inches(0.16),
+             Inches(1.3), Inches(0.14),
+             "Feature group", size=7, bold=True, color=INK, align="left")
+    for i, (lab, col) in enumerate(GROUP_PAL):
+        row_y = int(lg_y + i * Inches(0.16))
+        add_rect(s, lg_x, row_y, Inches(0.14), Inches(0.10), fill=col)
+        add_text(s, lg_x + Inches(0.18), row_y - Emu(10000),
+                 Inches(1.2), Inches(0.14),
+                 lab, size=6, color=INK, align="left")
+
+    # =========================================================
+    # BOTTOM CAPTION
+    # =========================================================
+    add_text(s, Inches(0.2), PLOT_Y + PLOT_H + Inches(0.6),
+             SLIDE_W - Inches(0.4), Inches(0.2),
+             f"{n} integrated numeric features (cell-cycle-contaminated "
+             "CD8-proliferation removed); top / left strips mark feature "
+             "group; ticks = feature index.",
+             size=7, color=INK, align="center")
 
 
 # ---------- Panel B: nested outer-LOOCV ROC ----------
@@ -638,9 +783,9 @@ def build_E():
             xx = to_x(svals[i]); yy = to_y(j + jitter)
             # color by raw value, high = GOOD blue, low = LT_GREY
             t = 0 if r_max == r_min else (rvals[i] - r_min) / (r_max - r_min)
-            r = int(0xE6 + t * (0x2E - 0xE6))
-            g = int(0x39 + t * (0x86 - 0x39))
-            b = int(0x46 + t * (0xAB - 0x46))
+            r = int(BAD_HEX[0] + t * (GOOD_HEX[0] - BAD_HEX[0]))
+            g = int(BAD_HEX[1] + t * (GOOD_HEX[1] - BAD_HEX[1]))
+            b = int(BAD_HEX[2] + t * (GOOD_HEX[2] - BAD_HEX[2]))
             add_circle(s, xx, yy, Emu(25000),
                        fill=RGBColor(r, g, b),
                        line_color=WHITE, line_width=0.3)
@@ -650,9 +795,9 @@ def build_E():
     cb_w = Inches(1.4); cb_h = Inches(0.1)
     for k in range(32):
         t = k / 31
-        r = int(0xE6 + t * (0x2E - 0xE6))
-        g = int(0x39 + t * (0x86 - 0x39))
-        b = int(0x46 + t * (0xAB - 0x46))
+        r = int(BAD_HEX[0] + t * (GOOD_HEX[0] - BAD_HEX[0]))
+        g = int(BAD_HEX[1] + t * (GOOD_HEX[1] - BAD_HEX[1]))
+        b = int(BAD_HEX[2] + t * (GOOD_HEX[2] - BAD_HEX[2]))
         add_rect(s, int(leg_x + k * cb_w / 32), leg_y,
                  int(cb_w / 32) + Emu(2000), cb_h,
                  fill=RGBColor(r, g, b))
