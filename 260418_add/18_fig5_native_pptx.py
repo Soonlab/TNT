@@ -1072,10 +1072,13 @@ def build_E():
              "feature value", size=7, color=INK, align="center")
 
 
-# ---------- Panel F: per-subject predicted probability ----------
-def build_F():
-    s = new_slide(prs)
-    draw_panel_letter(s, "F")
+# ---------- Per-subject predicted probability (Supp S8C) ----------
+# Originally Fig 5 Panel F; demoted to Supp S8C because the "14/35
+# misclassified at 0.5" visual risks obscuring the ranking-based AUC
+# 0.745 message of the main Fig 5.
+def build_predicted_prob_panel(target_prs, panel_letter="C"):
+    s = new_slide(target_prs)
+    draw_panel_letter(s, panel_letter)
 
     n = len(probs_sorted)
     to_x, to_y = draw_axes(s, PLOT_X, PLOT_Y, PLOT_W, PLOT_H,
@@ -1165,17 +1168,16 @@ def build_F():
              size=6, bold=True, color=HIGHLIGHT, align="left")
 
 
-# build all panels into one deck
+# build all panels into one deck (Panel F demoted to Supp S8C)
 build_A()
 build_B()
 build_C()
 build_D()
 build_E()
-build_F()
 
 deck_path = f"{OUT}/Fig5_nested_LASSO_native_editable.pptx"
 prs.save(deck_path)
-print(f"wrote {deck_path} with {len(prs.slides)} slides (Fig 5 A-F)")
+print(f"wrote {deck_path} with {len(prs.slides)} slides (Fig 5 A-E)")
 
 
 # ===========================================================================
@@ -1303,6 +1305,7 @@ def build_S8B():
 
 build_S8A()
 build_S8B()
+build_predicted_prob_panel(prs2, panel_letter="C")
 s8_path = f"{OUT}/SuppFig_S8_5scenario_ablation_native_editable.pptx"
 prs2.save(s8_path)
-print(f"wrote {s8_path} with {len(prs2.slides)} slides (S8 A-B)")
+print(f"wrote {s8_path} with {len(prs2.slides)} slides (S8 A-C)")
