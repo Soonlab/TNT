@@ -91,7 +91,7 @@ INK = RGBColor(0x22, 0x22, 0x22)
 LINE = RGBColor(0x33, 0x33, 0x33)
 GREY = RGBColor(0xBB, 0xBB, 0xBB)
 LT_GREY = RGBColor(0xDD, 0xDD, 0xDD)
-SHADE = RGBColor(0xC8, 0xDE, 0xD8)   # light teal for CI ribbon (matches GOOD)
+SHADE = RGBColor(0xD8, 0xDC, 0xE2)   # neutral light grey for CI ribbon (uncertainty, distinct from AUC teal fill)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 HIGHLIGHT = RGBColor(0xD4, 0xA3, 0x00)   # gold for emphasis / Youden / misclassified
 
@@ -663,7 +663,7 @@ def build_B():
     # === FANCY ADDITION: AUC area fill (between ROC and diagonal) ===
     # Approximate integration using thin vertical strips from diagonal to ROC.
     # For each x, diagonal is y=x, ROC is at current TPR; fill region.
-    AUC_FILL = RGBColor(0xC5, 0xDF, 0xD7)   # slightly richer teal-tint
+    AUC_FILL = RGBColor(0x9F, 0xC9, 0xBE)   # stronger teal tint of GOOD (#0a7d6e); must be visually distinct from grey CI ribbon
     for i in range(len(base) - 1):
         xa = to_x(base[i, 0]); ya = to_y(base[i, 1])
         xb = to_x(base[i+1, 0]); yb = to_y(base[i+1, 1])
