@@ -906,13 +906,11 @@ def build_D():
         evals = evals[order_e]
         evecs = evecs[:, order_e]
         angle = np.degrees(np.arctan2(evecs[1, 0], evecs[0, 0]))
-        # 68% (chi²_2, 2.30) and 95% (chi², 5.99) scalings
+        # 68% (chi²_2, 2.30) scaling — 95% omitted because at N=33 it
+        # exceeds the panel frame and adds no grouping information beyond
+        # the solid 68% ellipse + centroid diamond.
         sa68 = np.sqrt(2.30 * evals[0])
         sb68 = np.sqrt(2.30 * evals[1])
-        sa95 = np.sqrt(5.99 * evals[0])
-        sb95 = np.sqrt(5.99 * evals[1])
-        # 95% ellipse (thin dashed-like via reduced width)
-        draw_ellipse(mu[0], mu[1], sa95, sb95, angle, grp_color, 0.5)
         # 68% ellipse (solid, bolder)
         draw_ellipse(mu[0], mu[1], sa68, sb68, angle, grp_color, 1.2)
         # centroid marker
@@ -965,10 +963,6 @@ def build_D():
     add_text(s, leg_x, leg_y + Inches(0.65),
              Inches(1.7), Inches(0.15),
              "solid ellipse: 68 % CI",
-             size=6, color=RGBColor(0x55, 0x55, 0x55), align="left")
-    add_text(s, leg_x, leg_y + Inches(0.78),
-             Inches(1.7), Inches(0.15),
-             "thin ellipse: 95 % CI",
              size=6, color=RGBColor(0x55, 0x55, 0x55), align="left")
 
 
