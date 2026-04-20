@@ -117,7 +117,104 @@
 - CNCB GSA-Human: HRA006512 외 SC-RT rectal 발견 없음
 
 ## 다음 세션에 할 일
-- [ ] 사용자 Option A/B/C 선택
-- [ ] Option A 선택 시: `260418_add/25_gse254249_scrt_validation.py` 작성 + Fig 9 업데이트
-- [ ] Option B 선택 시: Discussion/Limitations 패러그래프 작성 + MEMORY 반영
+- [x] Option A 실행 완료 (GSE254249 Thread 1/2 scoring, Fig 9E 신설)
+- [ ] GSE278405/278406 보조 활용 여부 결정 (아래 2026-04-20 보강 검색 결과)
 - [ ] 사용자 희망 시: RAPIDO / STELLAR / UNION corresponding author 연락 메일 초안
+
+---
+
+# 2026-04-20 보강 검색 (NCBI eSearch + eSummary 직접 API 사용)
+
+사용자 요청으로 한 번 더 exhaustive 검색. 결과 추가로 1개 SCRT 임상 cohort + 2개 murine 모델 발견.
+
+## 🆕 추가 인간 SC-RT 코호트: GSE278405 + GSE278406
+
+**Paper**: Wang et al. *Cell Reports Medicine* 2025, PMID 39793571 — "Phenotypic plasticity and increased infiltration of peripheral blood-derived TREM1+ mono-macrophages following radiotherapy in rectal cancer" (Huazhong University of Science and Technology, 武汉).
+
+### 설계 (GEO SOFT 검증 완료)
+- **16 donor × 2 timepoints = 32 PBMC bulk RNA-seq samples** (GSE278405)
+- **19 donor scRNA-seq of tumor-infiltrating CD45+ immune cells** (GSE278406)
+- Arms: **LC n=5** (= LCRT sequential chemotherapy; 50.4 Gy + sequential chemo) vs **SIC n=11** (= **SCRT 5×5 Gy followed by immunochemotherapy**)
+- Sample IDs (counts file): H-number × {-1A=pre, -4A=post} for 16 donors
+- pMMR/MSS LARC, paired pre/post multi-omic, pCR vs non-pCR response
+
+### ⚠️ 결정적 제약: Tissue type
+- **Bulk RNA-seq = PBMCs (peripheral blood), NOT tumor tissue** (`!Sample_source_name_ch1 = PBMCs` 확인)
+- **scRNA-seq = CD45+ TIL immune cells only** (tumor epithelial cells 제외)
+- 우리 discovery cohort은 **bulk tumor RNA-seq**, 따라서 tissue type 불일치
+
+### 접근 가능성
+- ✅ GSE278405 All-counts.txt.gz (1.0 MB, processed): 32 sample × ~17000 gene FPKM/TPM values → 다운로드 완료 (`260418_add/gse278405/`)
+- ✅ GSE278406 RAW.tar (346 MB, scRNA processed mtx): 공개
+- 🔒 Raw FASTQ: privacy로 비공개
+
+### 활용 가능성 평가
+
+**Thread 1 (tumor-intrinsic: DSB/E2F/cellcycle/EMT) 검증 — ❌ 부적합**
+- Reason: PBMCs에는 종양세포가 없음. Thread 1 signature는 tumor epithelial state를 측정하는 것이라 blood에서는 biologically meaningless.
+- scRNA CD45+ TILs도 tumor cells 제외된 subset이라 Thread 1 적용 불가.
+
+**Thread 2 (immune: CD8-cytotoxic/Tcell/Bcell infiltration) 검증 — ⚠️ 제한적 가능**
+- PBMC의 면역세포 조성 ≠ tumor-infiltrating immune 조성 (fundamental biology 차이)
+- 그러나 systemic immune response로서 peripheral CD8-cytotoxic gene expression을 측정 가능
+- Caveat: 우리 discovery cohort에서는 tumor bulk RNA-seq로 측정, GSE278405은 PBMC → "different compartment, related biology"
+
+**Cascade/paired Δ 검증 — ✅ 일부 가능**
+- SCRT가 peripheral immune landscape에 어떤 반응 유도하는지 paired pre/post로 직접 측정
+- 우리 paired Δ findings (Treg, IGH clonotypes 등)의 **peripheral correlate** 확인 가능
+- 다만 우리 paired 분석은 tumor intratumoral ↑ 을 봤고, GSE278405은 peripheral blood에서의 systemic response — 해석 층위 다름
+
+### 권장 활용 방식
+- **메인 Fig 9 Panel E에 넣지 않음** (tissue type 불일치로 apples-to-oranges 비교)
+- **Supp Fig S22 (신규) or Discussion에 complementary note**로 언급:
+  - "A second public SC-RT-IC cohort (GSE278405, Wang 2025 Cell Rep Med; N=16 paired PBMC RNA-seq) provides peripheral-blood context but differs in tissue source (PBMC vs tumor), so it was not merged into the tumor-transcriptome meta-analysis."
+  - Peripheral Δ immune 분석은 향후 탐색 주제로 기록
+- **Raw 데이터 분석은 선택적**: 페이지가 있으면 PBMC-based Treg/CD8 Δ를 보조 검증으로 쓸 수 있지만, main finding 바뀌지 않음
+
+## 🐁 Murine SC-RT 모델 (제외 — 인간 환자 아님)
+
+| Accession | Paper | 내용 |
+|---|---|---|
+| GSE211991 (2023-02) | MC38-luc orthotopic SCRT immune response | Murine model, human validation에 부적합 |
+| GSE227738 (2023-08) | Type I IFN signaling drives SCRT responsiveness (murine) | Murine model |
+
+## 🔍 다시 확인한 기존 SC-RT-인접 cohorts (모두 SCRT 아님 재확인)
+
+| Accession | 재확인 결과 | Verdict |
+|---|---|---|
+| GSE119409 (Ji 2020 JITC) | 81 pretreatment biopsies, nRT alone, 정확한 dose GEO/abstract에 미기재 — full-text 참조 필요 | 기존 9-cohort meta에 LC-RT-alone으로 포함, 유지 |
+| GSE233517 (Lim 2023 Sci Rep) | Primary paper는 qPCR reference gene 연구, TRG labels GEO에 미deposited, CRT regimen 불명 | 재활용 어려움 |
+| GSE80606 (n=22) | "CRT" 일반 label, regimen/pre-post 미기재 | 분류 불가 |
+| GSE15781, GSE94104 | 명시적 LC-CRT (50 Gy / 45 Gy × 25 Fx) — BMC Cancer 2020에서 확인 | 기존 9-cohort에 이미 포함 또는 제외 처리 |
+
+## 🔒 여전히 non-public SC-RT trial translational arms (보강 확인)
+
+| Trial | 진행 상황 | 데이터 상태 |
+|---|---|---|
+| RAPIDO | 5-yr FU 2023 완료 | translational dbGaP/EGA only |
+| Stockholm III | long-term FU 2022 완료 | translational 未공개 |
+| Polish II | 5-yr FU 완료 | 未공개 |
+| STELLAR (Jin 2022 JCO) | Phase III 완료 | 未공개 |
+| STELLAR II (Jin 2024 IJROBP, 2025 Med) | Phase 2 결과 발표, Phase 3 진행 | 未공개 |
+| UNION (Lin 2024 Ann Oncol, Wang 2025 BMC Med) | 3-yr FU 완료 | Cell Rep Med 2025 paper가 GSE278405/278406 제공 (PBMC/TIL만) |
+| SPRING-01 (Zhang 2025 Lancet Oncol) | Phase 2 완료 | 未공개 |
+| LARCT-US (Erlandsson 2024 eClinicalMedicine) | observational cohort | 未공개 |
+| **mRCAT** (2024 BMC Cancer protocol) | 46/170 enrollment (2025-01) | 진행 중, 데이터 없음 |
+| **mRCAT-III** (ASCO 2025 TPS) | Phase 3 randomized, 진행 중 | 데이터 없음 |
+| **POLARSTAR** (NCT05245474, Imm Cancer Ther Ox 2025) | RT + PD1, 정확한 fractionation 불명확 | organoid/cell-line 중심, 자체 환자 RNA-seq 未공개 |
+| **Cadonilimab SC-RT** (BMC Cancer 2024 protocol) | Phase 2, 진행 중 | 데이터 없음 |
+
+## 🎯 최종 결론 (업데이트)
+
+**우리 discovery cohort과 tissue-type-matched** (**bulk tumor RNA-seq**) **공개 SC-RT LARC 코호트는 여전히 GSE254249 (Gao 2025, N=8 post-TNT) 1개**.
+
+**GSE278405 + GSE278406 (Wang 2025)은 SC-RT + 면역항암 peripheral blood/TIL 반응 연구로서 상보적이지만, tissue type 차이로 Thread 1 (tumor-intrinsic) 축 직접 검증에는 부적합**. Thread 2 (immune) peripheral correlate 검증으로는 가능하나, 비교 층위가 달라 main finding에 추가 validation으로 내세우기보단 Discussion/Supp Text에서 언급하는 수준이 적절.
+
+**최종 manuscript 조치 제안**:
+- Fig 9 Panel E (SC-RT validation) = GSE254249 단독 유지 (현 상태)
+- **Supp Text S6 (SCRT_external_search)**에 GSE278405/278406 등재 + "tissue-type-incompatible, complementary context only" 명시
+- Discussion "future directions"에 peripheral PBMC immune dynamics 검증 가능성 언급
+
+**향후 작업 가치가 있는 보조 분석 (선택)**:
+- GSE278405 All-counts.txt.gz로 paired pre/post PBMC Δ 계산 → 우리 Treg/CD8 cascade의 systemic correlate 있는지 탐색
+- GSE278406 scRNA-seq에서 우리 Thread 2 signature를 CD45+ pseudo-bulk에 적용해 TIL level validation
