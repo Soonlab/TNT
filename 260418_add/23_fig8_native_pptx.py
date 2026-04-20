@@ -1147,7 +1147,7 @@ def build_F():
     # Boxes arranged as: RT → clone clearance → antigen clearance →
     # immune reprogramming → B-cell infiltration → response
     stages = [
-        ("Radiation\n(50.4 Gy)",
+        ("SC-RT\n(25 Gy / 5 Fx)",
          RGBColor(0x4F, 0x73, 0x8E)),
         ("Clone clearance\n(SBS5, missense ↓)",
          GROUP_COLOR["Clone clearance"]),

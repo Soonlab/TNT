@@ -313,127 +313,176 @@ def build_A():
     # 3 (post-biopsy) → 4 (consolidation end / surgery) → 5
     # (final response)
     # ==========================================================
-    tl_x0 = Inches(0.65)
-    tl_x1 = Inches(6.25)
+    tl_x0 = Inches(1.10)   # shifted right to give cohort labels more space
+    tl_x1 = Inches(5.65)   # shifted left so endpoint box doesn't clip
     t_span = tl_x1 - tl_x0
 
     def tx(t):
         return _i(tl_x0 + t / 5.0 * t_span)
 
-    # --- Top track: our TNT cohort
-    top_y = Inches(0.9)
-    top_h = Inches(0.36)
+    # Three-track layout (v0.7.5): Discovery SC-RT / SC-RT external /
+    # LC-CRT external — compressed to fit vertical space with 0.85" gaps.
+    top_y = Inches(0.80); top_h = Inches(0.30)       # Discovery SC-RT
+    mid_y = Inches(1.70); mid_h = Inches(0.30)       # SC-RT external (GSE254249)
+    bot_y = Inches(2.60); bot_h = Inches(0.30)       # LC-CRT external meta
 
-    # --- Bottom track: external nCRT-long cohorts
-    bot_y = Inches(2.80)
-    bot_h = Inches(0.36)
-
-    # --- Cohort labels (left margin)
-    add_text(s, Inches(0.15), top_y + Inches(0.06),
-             Inches(0.95), Inches(0.18),
+    # --- Cohort labels (left margin) ---
+    add_text(s, Inches(0.15), top_y + Inches(0.02),
+             Inches(0.95), Inches(0.14),
              "Discovery",
              size=6, bold=True, color=INK, align="left")
-    add_text(s, Inches(0.15), top_y + Inches(0.18),
-             Inches(0.95), Inches(0.18),
-             "TNT (N = 35)",
+    add_text(s, Inches(0.15), top_y + Inches(0.14),
+             Inches(0.95), Inches(0.14),
+             "SC-RT TNT (N = 35)",
              size=7, bold=True, color=GOOD, align="left")
-    add_text(s, Inches(0.15), bot_y + Inches(0.06),
-             Inches(0.95), Inches(0.18),
-             "External",
-             size=6, bold=True, color=INK, align="left")
-    add_text(s, Inches(0.15), bot_y + Inches(0.18),
-             Inches(0.95), Inches(0.18),
-             "nCRT-long (N = 518)",
-             size=7, bold=True, color=THREAD2, align="left")
 
-    # --- Phases on top track: pre → RT alone → post → consolidation → surgery
-    # RT phase: t 1 → 2 (post-CRT biopsy at 3, consolidation 3 → 4)
-    # TOP PHASE BAR: pre-biopsy (t=1) to post-biopsy (t=3) = RT phase, shaded
+    add_text(s, Inches(0.15), mid_y + Inches(0.02),
+             Inches(0.95), Inches(0.14),
+             "External · SC-RT",
+             size=6, bold=True, color=INK, align="left")
+    add_text(s, Inches(0.15), mid_y + Inches(0.14),
+             Inches(0.95), Inches(0.14),
+             "GSE254249 (N = 8)",
+             size=7, bold=True, color=HIGHLIGHT, align="left")
+
+    add_text(s, Inches(0.15), bot_y + Inches(0.02),
+             Inches(0.95), Inches(0.14),
+             "External · LC-CRT",
+             size=6, bold=True, color=INK, align="left")
+    add_text(s, Inches(0.15), bot_y + Inches(0.14),
+             Inches(0.95), Inches(0.14),
+             "5 GEO + Akiyoshi",
+             size=7, bold=True, color=THREAD2, align="left")
+    add_text(s, Inches(0.15), bot_y + Inches(0.26),
+             Inches(0.95), Inches(0.12),
+             "(N = 518–816)",
+             size=6, color=THREAD2, align="left")
+
+    # ---- TOP TRACK: Discovery SC-RT + FOLFOX/CAPOX consolidation ----
+    # RT phase pre(t=1) -> post(t=3), consolidation (3-4), surgery (4-5)
     add_rect(s, tx(1), top_y, tx(3) - tx(1), top_h,
              fill=PHASE_RT, line_color=WHITE, line_width=0.5)
-    add_text(s, tx(1), top_y + Inches(0.09),
+    add_text(s, tx(1), top_y + Inches(0.06),
              tx(3) - tx(1), Inches(0.18),
-             "Radiation phase · 50.4 Gy / 28 fx · RT alone",
+             "SC-RT · 25 Gy / 5 Fx · RT alone",
              size=7, bold=True, color=WHITE, align="center")
 
-    # Consolidation phase: t=3 → t=4
     add_rect(s, tx(3), top_y, tx(4) - tx(3), top_h,
              fill=PHASE_CHEMO, line_color=WHITE, line_width=0.5)
-    add_text(s, tx(3), top_y + Inches(0.09),
+    add_text(s, tx(3), top_y + Inches(0.06),
              tx(4) - tx(3), Inches(0.18),
              "Consolidation · FOLFOX / CAPOX",
              size=7, bold=True, color=WHITE, align="center")
 
-    # Surgery / W&W: t=4 → t=5
     add_rect(s, tx(4), top_y, tx(5) - tx(4), top_h,
              fill=PHASE_SURG, line_color=WHITE, line_width=0.5)
-    add_text(s, tx(4) + Inches(0.02), top_y + Inches(0.09),
+    add_text(s, tx(4) + Inches(0.02), top_y + Inches(0.06),
              tx(5) - tx(4), Inches(0.18),
              "surgery / W&W",
              size=7, bold=True, color=WHITE, align="center")
 
-    # --- Bottom track: external nCRT-long phases
-    add_rect(s, tx(1), bot_y, tx(3) - tx(1), bot_h,
+    # ---- MIDDLE TRACK: SC-RT external (GSE254249, Gao Cancer Cell 2025) ----
+    add_rect(s, tx(1), mid_y, tx(3) - tx(1), mid_h,
              fill=PHASE_RT, line_color=WHITE, line_width=0.5)
-    add_text(s, tx(1), bot_y + Inches(0.09),
+    add_text(s, tx(1), mid_y + Inches(0.06),
              tx(3) - tx(1), Inches(0.18),
-             "Radiation phase · 50.4 Gy · RT + concurrent capecitabine",
+             "SC-RT · 25 Gy / 5 Fx",
              size=7, bold=True, color=WHITE, align="center")
 
-    # merged surgery block (nCRT-long has no separate consolidation)
+    add_rect(s, tx(3), mid_y, tx(4) - tx(3), mid_h,
+             fill=PHASE_CHEMO, line_color=WHITE, line_width=0.5)
+    add_text(s, tx(3), mid_y + Inches(0.06),
+             tx(4) - tx(3), Inches(0.18),
+             "Consolidation · FOLFOXIRI (3-drug)",
+             size=7, bold=True, color=WHITE, align="center")
+
+    add_rect(s, tx(4), mid_y, tx(5) - tx(4), mid_h,
+             fill=PHASE_SURG, line_color=WHITE, line_width=0.5)
+    add_text(s, tx(4) + Inches(0.02), mid_y + Inches(0.06),
+             tx(5) - tx(4), Inches(0.18),
+             "surgery",
+             size=7, bold=True, color=WHITE, align="center")
+
+    # ---- BOTTOM TRACK: LC-CRT external meta (5 GEO + Akiyoshi) ----
+    add_rect(s, tx(1), bot_y, tx(3) - tx(1), bot_h,
+             fill=PHASE_RT, line_color=WHITE, line_width=0.5)
+    add_text(s, tx(1), bot_y + Inches(0.06),
+             tx(3) - tx(1), Inches(0.18),
+             "LC-CRT · 50.4 Gy / 28 Fx · RT + concurrent capecitabine",
+             size=7, bold=True, color=WHITE, align="center")
+
     add_rect(s, tx(3), bot_y, tx(5) - tx(3), bot_h,
              fill=PHASE_SURG, line_color=WHITE, line_width=0.5)
-    add_text(s, tx(3), bot_y + Inches(0.09),
+    add_text(s, tx(3), bot_y + Inches(0.06),
              tx(5) - tx(3), Inches(0.18),
              "surgery",
              size=7, bold=True, color=WHITE, align="center")
 
-    # --- Timeline arrows for both tracks
-    # top track arrow
-    add_arrow(s, tl_x0, top_y + top_h + Inches(0.11),
-              tl_x1, top_y + top_h + Inches(0.11), color=INK, width=0.6)
-    add_arrow(s, tl_x0, bot_y + bot_h + Inches(0.11),
-              tl_x1, bot_y + bot_h + Inches(0.11), color=INK, width=0.6)
+    # ---- Timeline arrows for all three tracks ----
+    add_arrow(s, tl_x0, top_y + top_h + Inches(0.06),
+              tl_x1, top_y + top_h + Inches(0.06), color=INK, width=0.6)
+    add_arrow(s, tl_x0, mid_y + mid_h + Inches(0.06),
+              tl_x1, mid_y + mid_h + Inches(0.06), color=INK, width=0.6)
+    add_arrow(s, tl_x0, bot_y + bot_h + Inches(0.06),
+              tl_x1, bot_y + bot_h + Inches(0.06), color=INK, width=0.6)
 
-    # --- Biopsy markers + labels (top track only; external has pre only)
-    for t, lab in [(1, "pre-biopsy"), (3, "post-biopsy\n(post-RT, pre-chemo)")]:
+    # ---- Biopsy markers ----
+    # TOP track: pre + post
+    for t, lab in [(1, "pre-biopsy"), (3, "post-biopsy\n(post-RT)")]:
         xx = tx(t)
-        add_circle(s, xx, top_y - Inches(0.08), Emu(28000),
+        add_circle(s, xx, top_y - Inches(0.05), Emu(24000),
                    fill=GOOD, line_color=WHITE, line_width=0.9)
-        add_text(s, xx - Inches(0.55), top_y - Inches(0.30),
-                 Inches(1.1), Inches(0.22),
-                 lab, size=6, bold=True, color=GOOD, align="center")
+        add_text(s, xx - Inches(0.55), top_y - Inches(0.24),
+                 Inches(1.1), Inches(0.18),
+                 lab, size=5.5, bold=True, color=GOOD, align="center")
 
-    # external cohort: pre-biopsy only
+    # MIDDLE track: pre + intermediate/post (bulk RNA-seq slice is post-TNT)
     xx = tx(1)
-    add_circle(s, xx, bot_y - Inches(0.08), Emu(28000),
-               fill=THREAD2, line_color=WHITE, line_width=0.9)
-    add_text(s, xx - Inches(0.55), bot_y - Inches(0.22),
+    add_circle(s, xx, mid_y - Inches(0.05), Emu(22000),
+               fill=HIGHLIGHT, line_color=WHITE, line_width=0.9)
+    add_text(s, xx - Inches(0.45), mid_y - Inches(0.20),
+             Inches(0.9), Inches(0.14),
+             "pre (n=3)",
+             size=5.5, bold=True, color=HIGHLIGHT, align="center")
+    # "post-TNT" sample: drawn after consolidation (surgery bridge)
+    xx = tx(4)
+    add_circle(s, xx, mid_y - Inches(0.05), Emu(22000),
+               fill=HIGHLIGHT, line_color=WHITE, line_width=0.9)
+    add_text(s, xx - Inches(0.55), mid_y - Inches(0.20),
              Inches(1.1), Inches(0.14),
-             "pre-biopsy",
-             size=6, bold=True, color=THREAD2, align="center")
+             "post-TNT (n=8)",
+             size=5.5, bold=True, color=HIGHLIGHT, align="center")
 
-    # Radiation-phase sampling window bracket on top track
-    br_y = top_y - Inches(0.50)
+    # BOTTOM track: pre only
+    xx = tx(1)
+    add_circle(s, xx, bot_y - Inches(0.05), Emu(22000),
+               fill=THREAD2, line_color=WHITE, line_width=0.9)
+    add_text(s, xx - Inches(0.45), bot_y - Inches(0.20),
+             Inches(0.9), Inches(0.14),
+             "pre-biopsy",
+             size=5.5, bold=True, color=THREAD2, align="center")
+
+    # ---- Radiation-phase sampling window bracket on top track ----
+    br_y = top_y - Inches(0.42)
     add_line(s, tx(1) - Inches(0.05), br_y, tx(1) - Inches(0.05),
-             br_y + Inches(0.1), INK, 0.8)
+             br_y + Inches(0.08), INK, 0.8)
     add_line(s, tx(1) - Inches(0.05), br_y, tx(3) + Inches(0.05),
              br_y, INK, 0.8)
     add_line(s, tx(3) + Inches(0.05), br_y, tx(3) + Inches(0.05),
-             br_y + Inches(0.1), INK, 0.8)
-    add_text(s, tx(1), br_y - Inches(0.17),
-             tx(3) - tx(1), Inches(0.16),
-             "Sampling window brackets radiation phase only",
-             size=6, bold=True, italic=True, color=INK, align="center")
+             br_y + Inches(0.08), INK, 0.8)
+    add_text(s, tx(1), br_y - Inches(0.14),
+             tx(3) - tx(1), Inches(0.14),
+             "Discovery sampling window brackets radiation phase only",
+             size=5.5, bold=True, italic=True, color=INK, align="center")
 
-    # Final response adjudication end-point (both tracks converge here)
-    end_y = (top_y + top_h + bot_y) / 2 + Inches(0.1)
+    # ---- Final response adjudication end-point (all three tracks converge) ----
+    end_y = (top_y + top_h + bot_y) / 2 + Inches(0.05)
     add_rect(s, tx(5) - Inches(0.60), end_y - Inches(0.22),
              Inches(1.3), Inches(0.45),
              fill=HIGHLIGHT, line_color=WHITE, line_width=0.8)
     add_text(s, tx(5) - Inches(0.60), end_y - Inches(0.22),
              Inches(1.3), Inches(0.22),
-             "Final full-TNT response",
+             "Final TNT response",
              size=6, bold=True, color=WHITE,
              align="center", anchor="top")
     add_text(s, tx(5) - Inches(0.60), end_y - Inches(0.03),
@@ -444,49 +493,39 @@ def build_A():
     # Arrows from each track end to the shared endpoint
     add_arrow(s, tx(5), top_y + top_h / 2,
               tx(5) - Inches(0.6) + Inches(0.06), end_y,
-              color=INK, width=0.6)
+              color=INK, width=0.5)
+    add_arrow(s, tx(5), mid_y + mid_h / 2,
+              tx(5) - Inches(0.6) + Inches(0.06), end_y,
+              color=INK, width=0.5)
     add_arrow(s, tx(5), bot_y + bot_h / 2,
               tx(5) - Inches(0.6) + Inches(0.06), end_y,
-              color=INK, width=0.6)
+              color=INK, width=0.5)
 
-    # --- Middle comparison callout: chemo-timing regimen contrast ---
-    cc_y = Inches(2.00)
-    add_rect(s, Inches(1.25), cc_y, Inches(4.00), Inches(0.55),
-             fill=RGBColor(0xFA, 0xF2, 0xD8),
-             line_color=HIGHLIGHT, line_width=0.7)
-    add_text(s, Inches(1.30), cc_y + Inches(0.03),
-             Inches(3.9), Inches(0.19),
-             "Chemo-timing contrast",
-             size=6, bold=True, color=HIGHLIGHT, align="center")
-    add_text(s, Inches(1.30), cc_y + Inches(0.20),
-             Inches(3.9), Inches(0.18),
-             "Discovery: chemo AFTER RT (consolidated)",
-             size=7, color=GOOD, bold=True, align="center")
-    add_text(s, Inches(1.30), cc_y + Inches(0.36),
-             Inches(3.9), Inches(0.18),
-             "External: chemo DURING RT (concurrent)",
-             size=7, color=THREAD2, bold=True, align="center")
+    # (Regimen-axis right-margin annotations removed in v0.7.5 — the RT
+    # fractionation is already explicit inside each track's RT-phase bar label.)
 
-    # --- Bottom caption (tight) ---
-    add_text(s, Inches(0.15), Inches(3.80),
+    # ---- Bottom caption (regimen-agnostic message) ----
+    add_text(s, Inches(0.15), Inches(3.32),
              SLIDE_W - Inches(0.3), Inches(0.16),
-             "Both regimens end at the same clinical response endpoint. "
-             "Baseline (pre) biopsies precede all therapy; the TNT post-biopsy "
-             "samples RT alone (chemo follows). The pre-only baseline predictor",
+             "All three regimens converge to the same final-response endpoint. "
+             "The pre-treatment baseline predictor (Fig 9) cannot encode",
              size=6, color=INK, align="center")
-    add_text(s, Inches(0.15), Inches(3.97),
+    add_text(s, Inches(0.15), Inches(3.49),
              SLIDE_W - Inches(0.3), Inches(0.16),
-             "(tested in Fig 9) therefore cannot encode the chemo-timing "
-             "difference → regimen-agnostic.  Paired analyses (Figs 6-8) are "
-             "scoped to the RT-phase window only.",
+             "downstream regimen choice and nevertheless reproduces across "
+             "RT fractionation (SC-RT vs LC-CRT) and chemo-timing/backbone axes → regimen-agnostic.",
              size=6, color=INK, align="center")
+    add_text(s, Inches(0.15), Inches(3.66),
+             SLIDE_W - Inches(0.3), Inches(0.16),
+             "Paired analyses (Figs 6–8) are scoped to the discovery RT-phase window only.",
+             size=6, italic=True, color=RGBColor(0x55, 0x55, 0x55), align="center")
 
-    # time axis labels (below bottom track arrow)
-    add_text(s, tx(0) - Inches(0.25), Inches(3.38),
+    # time axis labels (below bottom arrow)
+    add_text(s, tx(0) - Inches(0.25), Inches(3.03),
              Inches(0.5), Inches(0.12),
              "diagnosis", size=5, color=RGBColor(0x66, 0x66, 0x66),
              align="center", italic=True)
-    add_text(s, tx(5) - Inches(0.25), Inches(3.38),
+    add_text(s, tx(5) - Inches(0.25), Inches(3.03),
              Inches(0.5), Inches(0.12),
              "~6 mo", size=5, color=RGBColor(0x66, 0x66, 0x66),
              align="center", italic=True)
@@ -850,7 +889,7 @@ def build_D():
     s = new_slide(prs_main)
     draw_panel_letter(s, "D")
 
-    # 4 claim rows
+    # 5 claim rows (v0.7.5: SC-RT-matched external validation added)
     rows = [
         # (group, short, full, effect_value, effect_range, effect_unit,
         #  normalised_bar_fraction_0_1, ref_fig, thread_color)
@@ -863,24 +902,33 @@ def build_D():
          (0.745 - 0.5) / 0.5,   # normalized to 0-1, where 1 = perfect
          "Fig 5",
          THREAD1),
-        ("External",
-         "Thread 1 meta (5 cohorts, N = 518)",
-         "DSB Z = +3.17 · cell-cycle +3.21 · E2F/MYC +2.79 · EMT +1.61 (trend)",
+        ("LC-CRT meta",
+         "Thread 1 (5 cohorts, N = 518)",
+         "DSB Z=+3.17 · cell-cycle +3.21 · E2F/MYC +2.79 · EMT +1.61 (trend)",
          "+3.21",
          "max Z",
          "Stouffer Z  (|Z| = 1.96 = P 0.05)",
          3.21 / 4.0,
-         "Fig 9",
+         "Fig 9A",
          THREAD1),
-        ("External",
-         "Thread 2 meta (6 sources, N = 816)",
+        ("LC-CRT meta",
+         "Thread 2 (6 sources, N = 816)",
          "CD8-cytotoxic + Akiyoshi 2023 (JAMA Netw Open)",
          "+3.29",
          "P = 0.001",
          "Stouffer Z",
          3.29 / 4.0,
-         "Fig 9",
+         "Fig 9A",
          THREAD2),
+        ("SC-RT external",
+         "GSE254249 (post-TNT, N = 8)",
+         "7/7 signatures concordant with discovery · Tcell_infil MW P = 0.036",
+         "7/7",
+         "sign P = 0.016",
+         "signature direction concordance  (7/7 = unanimous)",
+         7 / 7,
+         "Fig 9E",
+         HIGHLIGHT),
         ("Paired",
          "Radiation-phase pharmacodynamics",
          "EMT good 6/6 up (P = 0.016) · IGH coherence Wilcoxon P = 0.035",
@@ -889,12 +937,12 @@ def build_D():
          "−log₁₀ P  (horizontal bar length)",
          min(1.0, -np.log10(0.016) / 3.0),
          "Figs 6-7",
-         HIGHLIGHT),
+         RGBColor(0xB3, 0x7D, 0x00)),
     ]
 
-    # plot area
-    px = Inches(1.20); py = Inches(0.55)
-    pw = Inches(3.30); ph = Inches(3.30)
+    # plot area — expanded vertically to accommodate 5 rows at preserved density
+    px = Inches(1.20); py = Inches(0.45)
+    pw = Inches(3.30); ph = Inches(3.50)
     row_h = ph / len(rows)
 
     # right column x for effect text
@@ -912,7 +960,7 @@ def build_D():
 
         # left column: claim group + description
         add_text(s, Inches(0.20), y_top + Inches(0.08),
-                 Inches(0.70), Inches(0.14),
+                 Inches(1.00), Inches(0.14),
                  group.upper(), size=6, bold=True,
                  color=color, align="left")
         add_text(s, Inches(0.20), y_top + Inches(0.22),
@@ -952,21 +1000,17 @@ def build_D():
                  f"→ {ref}", size=7, italic=True, color=color, align="left")
 
     # bottom caption
-    add_text(s, Inches(0.15), Inches(4.00),
-             SLIDE_W - Inches(0.3), Inches(0.16),
-             "Two externally-validated orthogonal pre-CRT axes (Thread 1 "
-             "tumor-intrinsic + Thread 2 immune) reproduce across a chemo-"
-             "timing axis, supporting a regimen-agnostic interpretation;",
+    add_text(s, Inches(0.15), Inches(4.02),
+             SLIDE_W - Inches(0.3), Inches(0.14),
+             "Two externally-validated orthogonal pre-CRT axes (Thread 1 tumor-intrinsic + Thread 2 immune) reproduce across",
              size=6, color=INK, align="center")
-    add_text(s, Inches(0.15), Inches(4.15),
-             SLIDE_W - Inches(0.3), Inches(0.16),
-             "paired radiation-phase biopsies add an orthogonal dynamic "
-             "layer (target engagement + directional immune coherence).",
+    add_text(s, Inches(0.15), Inches(4.16),
+             SLIDE_W - Inches(0.3), Inches(0.14),
+             "three regimen strata (SC-RT + FOLFOX/CAPOX; LC-CRT + concurrent cape; SC-RT + FOLFOXIRI), supporting a regimen-agnostic interpretation;",
              size=6, color=INK, align="center")
     add_text(s, Inches(0.15), Inches(4.30),
-             SLIDE_W - Inches(0.3), Inches(0.16),
-             "Two-layer clinical algorithm: pre-CRT stratification at "
-             "diagnosis + mid-treatment coherence read at RT → consolidation.",
+             SLIDE_W - Inches(0.3), Inches(0.14),
+             "paired radiation-phase biopsies add an orthogonal dynamic layer (target engagement + directional immune coherence).",
              size=6, italic=True, color=HIGHLIGHT, align="center")
 
 
