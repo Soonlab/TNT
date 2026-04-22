@@ -117,16 +117,17 @@ for c in ['Cell cycle', 'DNA repair', 'Immune', 'EMT/Stromal', 'Other']:
     print(f"  {c:12s}  n={n:3d}  (up-good {n_up:3d}, up-poor {n_dn:3d})")
 
 # ---- plotting ----
+# Pathway-category palette matches Fig 5A GROUP_PAL (18_fig5_native_pptx.py
+# line 422-428) for cross-figure consistency: plum / amber / cerulean / moss.
 CAT_COLOR = {
-    'Cell cycle':   '#057a64',
-    'DNA repair':   '#00567d',
-    'Immune':       '#c11456',
-    'EMT/Stromal':  '#b03219',
-    'Other-good':   GOOD_DEEP,   # sig, no pathway, up-good
-    'Other-poor':   BAD_DEEP,    # sig, no pathway, up-poor
+    'Cell cycle':   '#E39A1E',   # amber  (matches Fig 5A Cell cycle)
+    'DNA repair':   '#A24E78',   # plum   (matches Fig 5A DNA repair)
+    'Immune':       '#118AB2',   # cerulean (matches Fig 5A Immune)
+    'EMT/Stromal':  '#5A8261',   # moss   (matches Fig 5A EMT / hypoxia)
+    'Other-good':   GOOD_DEEP,   # sig, no pathway, up-good (project teal)
+    'Other-poor':   BAD_DEEP,    # sig, no pathway, up-poor (project coral)
 }
 NS_COLOR = '#c0c6cf'
-FC_THRESH = 1.0
 
 fig, ax = plt.subplots(figsize=(9, 7))
 
@@ -172,12 +173,9 @@ for label, color, draw_first in [
                color=color, edgecolor='#0e2a47', linewidth=0.35,
                zorder=z)
 
-# |log2FC| >= 1 gold emphasis ring
-big = sig_df[sig_df.log2FoldChange.abs() >= FC_THRESH]
-ax.scatter(big.log2FoldChange.clip(-5, 5),
-           big['-log10p'].clip(0, 8),
-           s=90, facecolors='none',
-           edgecolor='#D4A300', linewidth=1.1, zorder=6)
+# Gold emphasis ring removed (user feedback 2026-04-22: too many dots at
+# |log2FC| >= 1 cluttered the visual; pathway-category colouring already
+# carries the structural emphasis).
 
 # labels: top pathway-coloured genes + top direction-only genes
 pathway_sig = sig_df[sig_df['cat'] != 'Other']
@@ -259,11 +257,6 @@ legend_handles.append(
            markerfacecolor=BAD_DEEP, markeredgecolor='#0e2a47',
            markeredgewidth=0.4,
            label=f'Other, up-poor  (n = {n_other_dn})'))
-legend_handles.append(
-    Line2D([0], [0], marker='o', linestyle='', markersize=11,
-           markerfacecolor='none', markeredgecolor='#D4A300',
-           markeredgewidth=1.2,
-           label=f'|log2 FC| ≥ {FC_THRESH:.0f}  (n = {len(big)})'))
 legend_handles.append(
     Line2D([0], [0], marker='o', linestyle='', markersize=6,
            markerfacecolor=NS_COLOR, markeredgecolor='none',

@@ -68,13 +68,15 @@ NS_CLOUD  = RGBColor(0xDD, 0xE2, 0xE8)
 WHITE     = RGBColor(0xFF, 0xFF, 0xFF)
 HIGHLIGHT = RGBColor(0xD4, 0xA3, 0x00)
 
+# Pathway palette mirrors Fig 5A (18_fig5_native_pptx.py L422-428) for
+# cross-figure consistency: plum / amber / cerulean / moss.
 CAT_COLOR = {
-    'Cell cycle':  RGBColor(0x05, 0x7A, 0x64),
-    'DNA repair':  RGBColor(0x00, 0x56, 0x7D),
-    'Immune':      RGBColor(0xC1, 0x14, 0x56),
-    'EMT/Stromal': RGBColor(0xB0, 0x32, 0x19),
-    'Other-good':  GOOD,
-    'Other-poor':  BAD,
+    'Cell cycle':  RGBColor(0xE3, 0x9A, 0x1E),   # amber
+    'DNA repair':  RGBColor(0xA2, 0x4E, 0x78),   # plum
+    'Immune':      RGBColor(0x11, 0x8A, 0xB2),   # cerulean
+    'EMT/Stromal': RGBColor(0x5A, 0x82, 0x61),   # moss green
+    'Other-good':  GOOD,                         # project deep teal
+    'Other-poor':  BAD,                          # project deep coral
 }
 
 FONT = "Arial"
@@ -273,11 +275,9 @@ def build_slide(prs, slide_w, slide_h, *, ax_x, ax_y, ax_w, ax_h,
         add_circle(s, tx(g.log2FC_clip), ty(g.nlp_clip), r_sig_cat,
                    fill=g['m_color'], line_color=INK, line_width=0.5)
 
-    # |log2FC| >= 1 gold emphasis
-    r_ring = Emu(46000) if variant == "main" else Emu(38000)
-    for _, g in fc_big.iterrows():
-        add_hollow(s, tx(g.log2FC_clip), ty(g.nlp_clip), r_ring,
-                   HIGHLIGHT, lw=1.1)
+    # Gold emphasis ring removed (user feedback 2026-04-22):
+    # |log2FC|>=1 placed rings on 132 dots which cluttered the visual;
+    # pathway-category colouring alone carries the structural emphasis.
 
     # labels: top pathway sig + top "Other"
     pa = sig[sig['cat'] != 'Other'].copy()
@@ -322,7 +322,6 @@ def build_slide(prs, slide_w, slide_h, *, ax_x, ax_y, ax_w, ax_h,
         (CAT_COLOR['EMT/Stromal'], None, 0.26, f"EMT / Stromal  (n = {cat_counts['EMT/Stromal']})"),
         (CAT_COLOR['Other-good'],  None, 0.22, f"Other, up-good  (n = {n_other_up})"),
         (CAT_COLOR['Other-poor'],  None, 0.22, f"Other, up-poor  (n = {n_other_dn})"),
-        (None, HIGHLIGHT,          0.30, f"|log₂ FC| ≥ {FC_THRESH:.0f}  (n = {len(fc_big)})"),
         (NS_CLOUD, None,           0.18, f"Non-significant (P ≥ {P_THRESH})"),
     ]
     entry_w = ax_w / legend_cols
