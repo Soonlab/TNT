@@ -91,7 +91,7 @@ CAT_COLORS = {
     'Stromal/EMT':          RGBColor(0xB0, 0x32, 0x19),
     'Hypoxia':              RGBColor(0x0E, 0x2A, 0x47),
     'Other':                RGBColor(0x5A, 0x67, 0x72),
-    'Purified immune':      HIGHLIGHT,
+    # (No separate "Purified immune" category — see SIG_CATEGORY mapping.)
 }
 
 SIG_CATEGORY = {
@@ -117,9 +117,13 @@ SIG_CATEGORY = {
     'Hypoxia_Buffa':         'Hypoxia',
     'Stemness_mRNAsi_proxy': 'Other',
     'Epithelial':            'Other',
-    'CD8_cytotoxic':         'Purified immune',
-    'Tcell_infiltration':    'Purified immune',
-    'Bcell_infiltration':    'Purified immune',
+    # purified-immune signatures slot into existing biology categories
+    # instead of a "Purified immune" group — avoids forward reference to
+    # the §3.12 external-validation framing while still grouping them
+    # sensibly among the 25 signatures.
+    'CD8_cytotoxic':         'Cytotoxic T-cell',
+    'Tcell_infiltration':    'Cytotoxic T-cell',
+    'Bcell_infiltration':    'B-cell / TLS',
 }
 
 NEW_SIGS = ['CD8_cytotoxic', 'Tcell_infiltration', 'Bcell_infiltration']
@@ -147,9 +151,9 @@ LABEL_FIX = {
     'Hypoxia_Buffa':         'Hypoxia (Buffa)',
     'Stemness_mRNAsi_proxy': 'Stemness (mRNAsi proxy)',
     'Epithelial':            'Epithelial',
-    'CD8_cytotoxic':         'CD8 cytotoxic ★',
-    'Tcell_infiltration':    'T-cell infiltration ★',
-    'Bcell_infiltration':    'B-cell infiltration ★',
+    'CD8_cytotoxic':         'CD8 cytotoxic',
+    'Tcell_infiltration':    'T-cell infiltration',
+    'Bcell_infiltration':    'B-cell infiltration',
 }
 
 FONT = "Arial"
@@ -273,8 +277,9 @@ def sig_stars(p):
 
 
 def row_color(sig, delta):
-    if sig in NEW_SIGS:
-        return HIGHLIGHT
+    # Uniform GOOD/BAD coloring for all 25 rows; purified-immune rows
+    # are no longer highlighted at Fig 4B (forward reference to §3.12
+    # removed per user feedback 2026-04-23).
     return GOOD if delta > 0 else BAD
 
 
@@ -336,25 +341,19 @@ add_text(s, AX_X, AX_Y + AX_H + Inches(0.28),
 for i, r in df.iterrows():
     yy = ty(i)
     sig = r.signature
-    is_new = sig in NEW_SIGS
     color = row_color(sig, r.delta_good_minus_bad)
-    # CI bar
+    # CI bar — uniform line width (no special emphasis for purified sigs)
     add_line(s, tx(r.ci_low), yy, tx(r.ci_high), yy,
-             color, 1.8 if is_new else 1.4)
-    # point estimate
+             color, 1.4)
+    # point estimate — uniform marker styling
     mag = _i(Emu(35000) if r.pvalue < 0.05 else Emu(24000))
     add_circle(s, tx(r.delta_good_minus_bad), yy, mag,
-               fill=color,
-               line_color=HIGHLIGHT if is_new else WHITE,
-               line_width=1.3 if is_new else 0.8)
+               fill=color, line_color=WHITE, line_width=0.8)
     # y-tick label (left of axis)
     label = LABEL_FIX.get(sig, sig.replace("_", " "))
     add_text(s, Inches(0.10), yy - Inches(0.09),
              AX_X - Inches(0.15), Inches(0.18),
-             label,
-             size=8, bold=is_new,
-             color=HIGHLIGHT if is_new else INK,
-             align="right")
+             label, size=8, color=INK, align="right")
     # right-column P-value
     p_str = (f"P = {r.pvalue:.3g}" if r.pvalue >= 0.001
              else f"P < 10⁻³")
@@ -367,31 +366,24 @@ for i, r in df.iterrows():
     if star:
         add_text(s, AX_X + AX_W + Inches(0.90), yy - Inches(0.09),
                  Inches(0.40), Inches(0.18),
-                 star, size=8, bold=True, color=HIGHLIGHT, align="left")
+                 star, size=8, bold=True, color=INK, align="left")
 
-# footer legend: gold ★ marker
+# footer legend (GOOD/BAD chips + star key only — no external-validation
+# forward reference)
 leg_y = AX_Y + AX_H + Inches(0.60)
-add_circle(s, Inches(0.70), leg_y + Inches(0.07), Emu(30000),
-           fill=HIGHLIGHT, line_color=WHITE, line_width=1.0)
-add_text(s, Inches(0.80), leg_y,
-         Inches(5.5), Inches(0.20),
-         "★ purified immune signatures, externally validated (§3.12)",
-         size=8, italic=True, color=HIGHLIGHT, align="left")
-# GOOD / BAD color chips
-add_rect(s, Inches(0.70), leg_y + Inches(0.25), Inches(0.14), Inches(0.10),
+add_rect(s, Inches(0.70), leg_y, Inches(0.14), Inches(0.10),
          fill=GOOD, line_color=None)
-add_text(s, Inches(0.90), leg_y + Inches(0.22),
+add_text(s, Inches(0.90), leg_y - Inches(0.03),
          Inches(2.0), Inches(0.18),
          "Δ > 0 (enriched in good responders)",
          size=7, color=INK, align="left")
-add_rect(s, Inches(3.10), leg_y + Inches(0.25), Inches(0.14), Inches(0.10),
+add_rect(s, Inches(3.10), leg_y, Inches(0.14), Inches(0.10),
          fill=BAD, line_color=None)
-add_text(s, Inches(3.30), leg_y + Inches(0.22),
+add_text(s, Inches(3.30), leg_y - Inches(0.03),
          Inches(2.3), Inches(0.18),
          "Δ < 0 (enriched in poor responders)",
          size=7, color=INK, align="left")
-# star legend
-add_text(s, Inches(0.70), leg_y + Inches(0.45),
+add_text(s, Inches(0.70), leg_y + Inches(0.22),
          Inches(5.5), Inches(0.18),
          "Marker size: large = P < 0.05 · small = n.s.  "
          "Stars: ★ P < 0.05 · ★★ P < 0.01 · ★★★ P < 0.001",
@@ -413,10 +405,10 @@ SLIDE_SUPP_H = Inches(8.7)
 
 s = new_slide(prs_supp, SLIDE_SUPP_W, SLIDE_SUPP_H)
 
-# re-sort with purified-immune category at bottom (clarity); within category, by P
+# sort by biology category; within category by P-value
 CAT_ORDER = ['Cytotoxic T-cell', 'Antigen presentation', 'IFN response',
              'B-cell / TLS', 'Innate', 'Regulatory', 'Stromal/EMT',
-             'Hypoxia', 'Other', 'Purified immune']
+             'Hypoxia', 'Other']
 df_supp = df.copy()
 df_supp["category"] = df_supp.signature.map(SIG_CATEGORY)
 df_supp["_cat_order"] = df_supp.category.map({c: i for i, c in enumerate(CAT_ORDER)})
@@ -456,8 +448,7 @@ for cat_name, grp in cat_groups:
     y_bot = AX_Y2 + (grp.index.max() + 1) * row_h2
     add_rect(s, Inches(0.15), y_top,
              AX_X2 - Inches(0.20), y_bot - y_top,
-             fill=BAND if cat_name != "Purified immune" else RGBColor(0xFA, 0xF2, 0xD6),
-             line_color=None)
+             fill=BAND, line_color=None)
 
 # x ticks
 for v in np.arange(-1.0, x_hi + 0.1, 0.5):
@@ -514,23 +505,17 @@ for i, r in df_supp.iterrows():
                  color=CAT_COLORS.get(cat, INK),
                  italic=True, align="left")
 
-    # signature label
+    # signature label (uniform ink colour — no forward-ref emphasis)
     label = LABEL_FIX.get(sig, sig.replace("_", " "))
     add_text(s, Inches(1.48), yy - Inches(0.09),
              AX_X2 - Inches(1.55), Inches(0.18),
-             label,
-             size=8, bold=is_new,
-             color=HIGHLIGHT if is_new else INK,
-             align="right")
+             label, size=8, color=INK, align="right")
 
-    # CI bar
-    add_line(s, tx2(r.ci_low), yy, tx2(r.ci_high), yy,
-             color, 1.8 if is_new else 1.4)
+    # CI bar — uniform
+    add_line(s, tx2(r.ci_low), yy, tx2(r.ci_high), yy, color, 1.4)
     mag = _i(Emu(35000) if r.pvalue < 0.05 else Emu(24000))
     add_circle(s, tx2(r.delta_good_minus_bad), yy, mag,
-               fill=color,
-               line_color=HIGHLIGHT if is_new else WHITE,
-               line_width=1.3 if is_new else 0.8)
+               fill=color, line_color=WHITE, line_width=0.8)
 
     # right-column numeric stats
     add_text(s, col_x[0], yy - Inches(0.09), col_w[0], Inches(0.18),
@@ -553,42 +538,34 @@ for i, r in df_supp.iterrows():
              size=7,
              color=INK if r.qvalue >= 0.1 else color,
              align="center")
-    # row star
+    # row star (INK colour — no gold emphasis)
     stars = sig_stars(r.pvalue)
     if stars:
         add_text(s, col_x[3] + Inches(0.55), yy - Inches(0.09),
                  Inches(0.40), Inches(0.18),
-                 stars, size=7, bold=True, color=HIGHLIGHT,
-                 align="left")
+                 stars, size=7, bold=True, color=INK, align="left")
 
-# footer legend
+# footer legend (no forward reference to §3.12 external validation)
 foot_y = AX_Y2 + AX_H2 + Inches(0.70)
-add_circle(s, Inches(3.40), foot_y + Inches(0.07), Emu(30000),
-           fill=HIGHLIGHT, line_color=WHITE, line_width=1.0)
-add_text(s, Inches(3.55), foot_y,
-         Inches(6.0), Inches(0.20),
-         "★ purified immune signatures — CD8 cytotoxic / T-cell infiltration / "
-         "B-cell infiltration, externally validated in §3.12",
-         size=8, italic=True, color=HIGHLIGHT, align="left")
-add_rect(s, Inches(3.40), foot_y + Inches(0.28), Inches(0.14), Inches(0.10),
+add_rect(s, Inches(3.40), foot_y + Inches(0.02), Inches(0.14), Inches(0.10),
          fill=GOOD, line_color=None)
-add_text(s, Inches(3.60), foot_y + Inches(0.25),
+add_text(s, Inches(3.60), foot_y,
          Inches(2.0), Inches(0.18),
          "Δ > 0 (good-enriched)",
          size=7, color=INK, align="left")
-add_rect(s, Inches(5.55), foot_y + Inches(0.28), Inches(0.14), Inches(0.10),
+add_rect(s, Inches(5.55), foot_y + Inches(0.02), Inches(0.14), Inches(0.10),
          fill=BAD, line_color=None)
-add_text(s, Inches(5.75), foot_y + Inches(0.25),
+add_text(s, Inches(5.75), foot_y,
          Inches(2.0), Inches(0.18),
          "Δ < 0 (poor-enriched)",
          size=7, color=INK, align="left")
-add_rect(s, Inches(7.60), foot_y + Inches(0.28), Inches(0.20), Inches(0.10),
+add_rect(s, Inches(7.60), foot_y + Inches(0.02), Inches(0.20), Inches(0.10),
          fill=NEUTRAL, line_color=LINE, line_width=0.3)
-add_text(s, Inches(7.85), foot_y + Inches(0.25),
+add_text(s, Inches(7.85), foot_y,
          Inches(2.5), Inches(0.18),
          "±0.05 no-effect zone",
          size=7, color=GREY, italic=True, align="left")
-add_text(s, Inches(3.40), foot_y + Inches(0.48),
+add_text(s, Inches(3.40), foot_y + Inches(0.22),
          Inches(7.3), Inches(0.18),
          "Stars: ★ P < 0.05 · ★★ P < 0.01 · ★★★ P < 0.001  ·  "
          "q = Benjamini–Hochberg FDR across 25 signatures  ·  "

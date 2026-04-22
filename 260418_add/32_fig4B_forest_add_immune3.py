@@ -87,9 +87,9 @@ df_plot = df.iloc[::-1].reset_index(drop=True)   # lowest P at top after flip
 
 # ---- plot
 LABEL_FIX = {
-    'CD8_cytotoxic':      'CD8 cytotoxic ★',
-    'Tcell_infiltration': 'T-cell infiltration ★',
-    'Bcell_infiltration': 'B-cell infiltration ★',
+    'CD8_cytotoxic':      'CD8 cytotoxic',
+    'Tcell_infiltration': 'T-cell infiltration',
+    'Bcell_infiltration': 'B-cell infiltration',
 }
 
 fig, ax = plt.subplots(figsize=(9.3, 9.0))
@@ -100,16 +100,17 @@ right_margin = (xmax_data - xmin_data) * 0.55
 ax.set_xlim(xmin_data*1.1, xmax_data + right_margin)
 
 for i, (_, r) in enumerate(df_plot.iterrows()):
-    is_new = r.signature in NEW_SIGS
     color = GOOD_DEEP if r.delta_good_minus_bad > 0 else BAD_DEEP
     # CI line
     ax.plot([r.ci_low, r.ci_high], [i, i], color=color, lw=2.0, alpha=0.85,
             solid_capstyle='round')
-    # point estimate
+    # point estimate — all 25 rows rendered uniformly (no special emphasis
+    # for the 3 purified-immune rows; external validation mention moved
+    # out to §3.12 to avoid a forward reference at §3.4)
     ax.scatter(r.delta_good_minus_bad, i,
                s=180 if r.pvalue < 0.05 else 100,
-               color=color, edgecolor=NEW_ACCENT if is_new else 'white',
-               linewidth=1.8 if is_new else 1.4, zorder=3)
+               color=color, edgecolor='white',
+               linewidth=1.4, zorder=3)
     # p-value label
     star = sig_symbol(r.pvalue)
     if star == 'ns': star = ''
@@ -121,25 +122,12 @@ ax.axvline(0, color=BLACK_DEEP, lw=1.0)
 ax.axvspan(-0.05, 0.05, color='#dee2e6', alpha=0.4)
 ax.set_yticks(y)
 
-# ---- styled y-tick labels: bold+gold for the 3 new externally-validated sigs
-ytick_labels = []
-for s in df_plot.signature:
-    disp = LABEL_FIX.get(s, s.replace('_', ' '))
-    ytick_labels.append(disp)
+# y-tick labels (uniform ink colour; no category emphasis)
+ytick_labels = [LABEL_FIX.get(s, s.replace('_', ' ')) for s in df_plot.signature]
 ax.set_yticklabels(ytick_labels, fontsize=10, color=BLACK_DEEP)
-for tick, sig_n in zip(ax.get_yticklabels(), df_plot.signature):
-    if sig_n in NEW_SIGS:
-        tick.set_color(NEW_ACCENT)
-        tick.set_fontweight('bold')
 
 ax.set_xlabel('Δ z-score (good − poor), 95 % bootstrap CI',
               fontsize=11, fontweight='bold', color=BLACK_DEEP)
-
-# legend note for ★ rows
-ax.text(0.985, -0.06,
-        '★ purified immune signatures (externally validated, §3.12)',
-        transform=ax.transAxes, ha='right', va='top',
-        fontsize=8.5, color=NEW_ACCENT, fontstyle='italic')
 
 add_axis_spines(ax)
 save_panel(fig, 'Fig3D_forest_lollipop', OUT)
