@@ -217,6 +217,8 @@ def add_triangle_arrow(slide, x1, y1, x2, y2, color, lw=1.8):
 def build_slide(prs, slide_w, slide_h, *, ax_x, ax_y, ax_w, ax_h,
                 ns_sample_n, label_top_n, variant="main", legend_cols=2):
     s = new_slide(prs, slide_w, slide_h)
+    # slide_w / slide_h are python-pptx EMU integers; keep for label column
+    # calculations below.
     x_lo, x_hi = -5.2, 5.2
     y_lo, y_hi = 0.0, 8.5
     def tx(v): return _i(ax_x + (v-x_lo)/(x_hi-x_lo) * ax_w)
@@ -282,16 +284,68 @@ def build_slide(prs, slide_w, slide_h, *, ax_x, ax_y, ax_w, ax_h,
     # |log2FC|>=1 placed rings on 132 dots which cluttered the visual;
     # pathway-category colouring alone carries the structural emphasis.
 
-    # labels: top pathway sig + top "Other"
+    # ---------- Labels ---------- #
+    # All 22 pathway-member sig genes get external column labels + leader
+    # line in the category colour. "Other" top hits use adjustText-like
+    # in-plot placement (grey leader lines).
+
     pa = sig[sig['cat'] != 'Other'].copy()
-    pa['score'] = pa['-log10p'] * pa.log2FoldChange.abs()
-    pa = pa.sort_values('score', ascending=False).head(15 if variant=="main" else 25)
     ot = sig[sig['cat'] == 'Other'].copy()
     ot['score'] = ot['-log10p'] * ot.log2FoldChange.abs()
-    ot = ot.sort_values('score', ascending=False).head(15 if variant=="main" else 35)
-    label_df = pd.concat([pa, ot], ignore_index=True).head(label_top_n)
+    ot_top = ot.sort_values('score', ascending=False).head(
+        6 if variant == "main" else 12)
+
+    # External-column layout for pathway genes
+    pa_left  = pa[pa.log2FoldChange < 0].sort_values('-log10p', ascending=False)
+    pa_right = pa[pa.log2FoldChange > 0].sort_values('-log10p', ascending=False)
+
+    # Place label columns OUTSIDE the axis frame, beyond the y-axis label
+    # and tick labels, so leader lines pass cleanly across the y-axis
+    # furniture without collision.
+    label_w = Inches(1.05)
+    # gene-label columns: flush to slide edges with a thin outer margin
+    tb_left_x  = Inches(0.10)                        # left column starts at slide edge
+    tb_right_x = slide_w - Inches(0.10) - label_w   # right column flush to right edge
+    # leader-line anchors at the INNER edge of each label column
+    anchor_left  = tb_left_x + label_w
+    anchor_right = tb_right_x
+
+    # y positions: spread across the sig region (y=2.2 .. 7.8)
+    def y_slots(n):
+        if n == 0:
+            return []
+        if n == 1:
+            return [ty(4.5)]
+        ys = np.linspace(7.8, 2.2, n)
+        return [ty(y) for y in ys]
+
+    label_h = Inches(0.17)
+    for side, frame in [('left', pa_left), ('right', pa_right)]:
+        ys = y_slots(len(frame))
+        for (_, g), ly in zip(frame.iterrows(), ys):
+            if side == 'left':
+                tb_x = tb_left_x
+                text_align = "right"
+                anchor_x = anchor_left
+            else:
+                tb_x = tb_right_x
+                text_align = "left"
+                anchor_x = anchor_right
+            add_text(s, tb_x, ly - label_h / 2, label_w, label_h,
+                     g.gene,
+                     size=7.5 if variant == "main" else 8,
+                     bold=True, color=g['m_color'],
+                     align=text_align)
+            # leader line: dot → anchor (inner edge of label column),
+            # coloured by category
+            dot_x = tx(g.log2FC_clip)
+            dot_y = ty(g.nlp_clip)
+            add_line(s, dot_x, dot_y, anchor_x, ly,
+                     color=g['m_color'], width=0.55)
+
+    # "Other" top hits — in-plot direct labelling (no leader, same as before)
     rng2 = np.random.default_rng(5)
-    for _, g in label_df.iterrows():
+    for _, g in ot_top.iterrows():
         is_right = g.log2FoldChange > 0
         bw = Inches(0.85)
         tx_ = (tx(g.log2FC_clip)+Inches(0.10)) if is_right else (tx(g.log2FC_clip)-bw-Inches(0.10))
@@ -299,8 +353,8 @@ def build_slide(prs, slide_w, slide_h, *, ax_x, ax_y, ax_w, ax_h,
         add_text(s, tx_, ty(g.nlp_clip) + y_off,
                  bw, Inches(0.16),
                  g.gene,
-                 size=7 if variant=="main" else 7.5,
-                 bold=True, color=g['m_color'],
+                 size=7 if variant == "main" else 7.5,
+                 bold=False, color=g['m_color'],
                  align="left" if is_right else "right")
 
     # direction arrows
@@ -346,9 +400,9 @@ def build_slide(prs, slide_w, slide_h, *, ax_x, ax_y, ax_w, ax_h,
 
 prs_main = Presentation()
 build_slide(prs_main,
-            slide_w=Inches(9.0), slide_h=Inches(7.2),
-            ax_x=Inches(1.30), ax_y=Inches(0.45),
-            ax_w=Inches(7.30), ax_h=Inches(4.70),
+            slide_w=Inches(12.5), slide_h=Inches(7.4),
+            ax_x=Inches(2.80), ax_y=Inches(0.45),
+            ax_w=Inches(7.30), ax_h=Inches(4.80),
             ns_sample_n=500,
             label_top_n=25,
             variant="main",
@@ -359,9 +413,9 @@ print(f"wrote MAIN → {out_main}")
 
 prs_supp = Presentation()
 build_slide(prs_supp,
-            slide_w=Inches(11.5), slide_h=Inches(8.0),
-            ax_x=Inches(1.45), ax_y=Inches(0.55),
-            ax_w=Inches(9.40), ax_h=Inches(5.90),
+            slide_w=Inches(14.5), slide_h=Inches(8.2),
+            ax_x=Inches(2.80), ax_y=Inches(0.55),
+            ax_w=Inches(9.00), ax_h=Inches(6.00),
             ns_sample_n=1200,
             label_top_n=55,
             variant="supp",

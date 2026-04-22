@@ -131,7 +131,7 @@ CAT_COLOR = {
 }
 NS_COLOR = '#c0c6cf'             # light grey — NS cloud
 
-fig, ax = plt.subplots(figsize=(9, 7))
+fig, ax = plt.subplots(figsize=(11, 7.5))
 
 # non-significant: hexbin density backdrop + faint dots
 ax.hexbin(ns_df.log2FoldChange.clip(-5, 5),
@@ -179,33 +179,78 @@ for label, color, draw_first in [
 # |log2FC| >= 1 cluttered the visual; pathway-category colouring already
 # carries the structural emphasis).
 
-# labels: top pathway-coloured genes + top direction-only genes
-pathway_sig = sig_df[sig_df['cat'] != 'Other']
-to_label_path = (pathway_sig
-                 .assign(score=pathway_sig['-log10p'] * pathway_sig.log2FoldChange.abs())
-                 .sort_values('score', ascending=False)
-                 .head(25))
-other_sig = sig_df[sig_df['cat'] == 'Other']
+# labels: ALL 22 pathway-member sig genes (with per-category leader lines)
+# + top ~8 "Other" sig genes (dark grey leader lines, adjustText placement)
+pathway_sig = sig_df[sig_df['cat'] != 'Other'].copy()
+other_sig   = sig_df[sig_df['cat'] == 'Other'].copy()
 to_label_other = (other_sig
                   .assign(score=other_sig['-log10p'] * other_sig.log2FoldChange.abs())
                   .sort_values('score', ascending=False)
-                  .head(10))
-to_label = pd.concat([to_label_path, to_label_other], ignore_index=True)
+                  .head(8))
 
-texts = []
-for _, r in to_label.iterrows():
-    color_ = r['marker_color']
+# Manual outside-column placement for pathway genes with coloured leader
+# lines. Use upper blank space above the dot cluster (most sig genes lie
+# in y=2-3; y=4-8 is empty). Stack labels from y=7.8 downward to y=2.2
+# with evenly-distributed slots per side, preserving dot y-order.
+X_LEFT   = -5.50
+X_RIGHT  = +5.50
+
+def layout_side(rows_df, side):
+    """Evenly distribute labels along the y axis and connect to dots."""
+    if len(rows_df) == 0:
+        return []
+    r = rows_df.sort_values('-log10p', ascending=False).reset_index(drop=True)
+    n = len(r)
+    y_top = 7.8
+    y_bot = 2.15
+    # if few labels, compress stack; otherwise spread across full range
+    if n == 1:
+        ys = [4.5]
+    else:
+        ys = np.linspace(y_top, y_bot, n)
+    placed = []
+    for (_, g), ly in zip(r.iterrows(), ys):
+        placed.append((X_LEFT if side == 'left' else X_RIGHT,
+                       ly,
+                       'right' if side == 'left' else 'left',
+                       g))
+    return placed
+
+left  = layout_side(pathway_sig[pathway_sig.log2FoldChange < 0], 'left')
+right = layout_side(pathway_sig[pathway_sig.log2FoldChange > 0], 'right')
+
+for lx, ly, ha, g in left + right:
+    color_ = g['marker_color']
+    # leader line: from dot (data coord) to label anchor, coloured by category
+    ax.annotate(
+        g.gene,
+        xy=(np.clip(g.log2FoldChange, -5, 5), np.clip(g['-log10p'], 0, 8)),
+        xytext=(lx, ly),
+        ha=ha, va='center',
+        fontsize=8.5, color=color_, fontweight='bold',
+        arrowprops=dict(arrowstyle='-', color=color_,
+                        lw=0.6, shrinkA=2, shrinkB=3,
+                        connectionstyle='arc3,rad=0.0',
+                        alpha=0.85),
+        zorder=7,
+    )
+
+# "Other" top-8 labels via adjustText (single neutral arrow colour)
+other_texts = []
+for _, r in to_label_other.iterrows():
     t = ax.text(np.clip(r.log2FoldChange, -5, 5),
                 np.clip(r['-log10p'], 0, 8),
-                r.gene, fontsize=8.5,
-                color=color_, fontweight='bold')
-    texts.append(t)
-try:
-    adjust_text(texts, ax=ax,
-                arrowprops=dict(arrowstyle='-', color='#5a6772', lw=0.35),
-                expand_points=(1.4, 1.5), force_points=0.55)
-except Exception:
-    pass
+                r.gene, fontsize=7.5,
+                color=r['marker_color'], fontweight='normal')
+    other_texts.append(t)
+if other_texts:
+    try:
+        adjust_text(other_texts, ax=ax,
+                    arrowprops=dict(arrowstyle='-', color='#8a8f98',
+                                    lw=0.3),
+                    expand_points=(1.3, 1.4), force_points=0.45)
+    except Exception:
+        pass
 
 # axis decorations
 ax.axvline(0, color=INK, lw=0.6, alpha=0.5)
@@ -213,7 +258,7 @@ ax.axhline(-np.log10(P_THRESH), color='#5a6772', lw=0.7, ls='--', alpha=0.7)
 ax.text(-4.95, -np.log10(P_THRESH) + 0.08,
         f'P = {P_THRESH}', fontsize=8.5, color='#5a6772', ha='left')
 
-ax.set_xlim(-5.2, 5.2)
+ax.set_xlim(-6.2, 6.2)   # widened to accommodate external label columns
 ax.set_ylim(0, 8.5)
 
 # direction arrows
