@@ -69,14 +69,17 @@ WHITE     = RGBColor(0xFF, 0xFF, 0xFF)
 HIGHLIGHT = RGBColor(0xD4, 0xA3, 0x00)
 
 # Pathway palette mirrors Fig 5A (18_fig5_native_pptx.py L422-428) for
-# cross-figure consistency: plum / amber / cerulean / moss.
+# cross-figure consistency: plum / amber / cerulean / moss. "Other"
+# (both directions) is medium grey so the 4 pathway categories carry
+# all visual emphasis.
+OTHER_GREY = RGBColor(0x6C, 0x75, 0x7D)   # medium grey for sig, no pathway
 CAT_COLOR = {
     'Cell cycle':  RGBColor(0xE3, 0x9A, 0x1E),   # amber
     'DNA repair':  RGBColor(0xA2, 0x4E, 0x78),   # plum
     'Immune':      RGBColor(0x11, 0x8A, 0xB2),   # cerulean
     'EMT/Stromal': RGBColor(0x5A, 0x82, 0x61),   # moss green
-    'Other-good':  GOOD,                         # project deep teal
-    'Other-poor':  BAD,                          # project deep coral
+    'Other-good':  OTHER_GREY,
+    'Other-poor':  OTHER_GREY,
 }
 
 FONT = "Arial"
@@ -315,13 +318,13 @@ def build_slide(prs, slide_w, slide_h, *, ax_x, ax_y, ax_w, ax_h,
 
     # legend
     leg_y = ax_y + ax_h + Inches(0.60)
+    n_other_total = n_other_up + n_other_dn
     entries = [
         (CAT_COLOR['Cell cycle'],  None, 0.26, f"Cell cycle  (n = {cat_counts['Cell cycle']})"),
         (CAT_COLOR['DNA repair'],  None, 0.26, f"DNA repair  (n = {cat_counts['DNA repair']})"),
         (CAT_COLOR['Immune'],      None, 0.26, f"Immune  (n = {cat_counts['Immune']})"),
         (CAT_COLOR['EMT/Stromal'], None, 0.26, f"EMT / Stromal  (n = {cat_counts['EMT/Stromal']})"),
-        (CAT_COLOR['Other-good'],  None, 0.22, f"Other, up-good  (n = {n_other_up})"),
-        (CAT_COLOR['Other-poor'],  None, 0.22, f"Other, up-poor  (n = {n_other_dn})"),
+        (OTHER_GREY,               None, 0.22, f"Other (no pathway)  (n = {n_other_total})"),
         (NS_CLOUD, None,           0.18, f"Non-significant (P ≥ {P_THRESH})"),
     ]
     entry_w = ax_w / legend_cols

@@ -119,15 +119,17 @@ for c in ['Cell cycle', 'DNA repair', 'Immune', 'EMT/Stromal', 'Other']:
 # ---- plotting ----
 # Pathway-category palette matches Fig 5A GROUP_PAL (18_fig5_native_pptx.py
 # line 422-428) for cross-figure consistency: plum / amber / cerulean / moss.
+# Other (both directions) = neutral medium grey so the 4 pathway categories
+# carry all the visual emphasis.
 CAT_COLOR = {
     'Cell cycle':   '#E39A1E',   # amber  (matches Fig 5A Cell cycle)
     'DNA repair':   '#A24E78',   # plum   (matches Fig 5A DNA repair)
     'Immune':       '#118AB2',   # cerulean (matches Fig 5A Immune)
     'EMT/Stromal':  '#5A8261',   # moss   (matches Fig 5A EMT / hypoxia)
-    'Other-good':   GOOD_DEEP,   # sig, no pathway, up-good (project teal)
-    'Other-poor':   BAD_DEEP,    # sig, no pathway, up-poor (project coral)
+    'Other-good':   '#6c757d',   # medium grey (sig, no pathway, up-good)
+    'Other-poor':   '#6c757d',   # medium grey (sig, no pathway, up-poor)
 }
-NS_COLOR = '#c0c6cf'
+NS_COLOR = '#c0c6cf'             # light grey — NS cloud
 
 fig, ax = plt.subplots(figsize=(9, 7))
 
@@ -245,18 +247,12 @@ for c in ['Cell cycle', 'DNA repair', 'Immune', 'EMT/Stromal']:
                markerfacecolor=CAT_COLOR[c], markeredgecolor='#0e2a47',
                markeredgewidth=0.4,
                label=f'{c}  (n = {n})'))
-n_other_up = ((sig_df['cat'] == 'Other') & (sig_df.log2FoldChange > 0)).sum()
-n_other_dn = ((sig_df['cat'] == 'Other') & (sig_df.log2FoldChange < 0)).sum()
+n_other = (sig_df['cat'] == 'Other').sum()
 legend_handles.append(
     Line2D([0], [0], marker='o', linestyle='', markersize=7,
-           markerfacecolor=GOOD_DEEP, markeredgecolor='#0e2a47',
+           markerfacecolor=CAT_COLOR['Other-good'], markeredgecolor='#0e2a47',
            markeredgewidth=0.4,
-           label=f'Other, up-good  (n = {n_other_up})'))
-legend_handles.append(
-    Line2D([0], [0], marker='o', linestyle='', markersize=7,
-           markerfacecolor=BAD_DEEP, markeredgecolor='#0e2a47',
-           markeredgewidth=0.4,
-           label=f'Other, up-poor  (n = {n_other_dn})'))
+           label=f'Other (no pathway)  (n = {n_other})'))
 legend_handles.append(
     Line2D([0], [0], marker='o', linestyle='', markersize=6,
            markerfacecolor=NS_COLOR, markeredgecolor='none',
