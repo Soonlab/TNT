@@ -323,6 +323,84 @@ class NativePanel:
         self.prs.save(path)
 
 
+def half_violin(panel, x_center: float, values, side: str = 'left',
+                max_width: float = 0.25, color=None, fill=None,
+                edge_width_pt: float = 0.75, n_kde: int = 60):
+    """Freeform-based half-violin (fully editable polygon).
+
+    Args:
+        panel        : NativePanel with active axes
+        x_center     : data-space x coord of the violin axis
+        values       : raw data values
+        side         : 'left' or 'right' (half offset direction)
+        max_width    : max half-width in data x units
+        color        : edge color (RGBColor)
+        fill         : fill color (RGBColor) or None
+    """
+    from scipy import stats as _st
+    v = np.asarray(values, dtype=float)
+    v = v[~np.isnan(v)]
+    if len(v) < 2:
+        return None
+    ymin, ymax = float(v.min()), float(v.max())
+    if ymax - ymin < 1e-9: ymax = ymin + 1e-6
+    try:
+        kde = _st.gaussian_kde(v, bw_method='scott')
+    except Exception:
+        return None
+    y_samples = np.linspace(ymin, ymax, n_kde)
+    d = kde(y_samples)
+    d = d / d.max() * max_width
+    sign = -1 if side == 'left' else +1
+    # polygon points in (data_x, data_y) order:
+    pts_data = [(x_center, ymin)]
+    for ys, ds in zip(y_samples, d):
+        pts_data.append((x_center + sign * ds, ys))
+    pts_data.append((x_center, ymax))
+    # convert to EMU
+    ax = panel.ax
+    pts_emu = []
+    for xd, yd in pts_data:
+        x_in = ax.x2in(xd); y_in = ax.y2in(yd)
+        pts_emu.append((Emu(int(x_in * 914400)), Emu(int(y_in * 914400))))
+    # first point as start, rest as offsets from start... actually
+    # pptx freeform expects ABSOLUTE coordinates (not deltas)
+    start_x, start_y = pts_emu[0]
+    builder = panel.slide.shapes.build_freeform(start_x, start_y, scale=1)
+    # add line segments: list of (x, y) absolute
+    builder.add_line_segments(pts_emu[1:], close=True)
+    shape = builder.convert_to_shape()
+    if fill is not None:
+        set_fill(shape, fill)
+    else:
+        shape.fill.background()
+    if color is not None:
+        set_line(shape, color, edge_width_pt)
+    else:
+        shape.line.fill.background()
+    kill_shadow(shape)
+    return shape
+
+
+def stacked_hbar(panel, x: float, y: float, h_data: float,
+                 seg_vals: list, seg_colors: list, y_width: float = 0.8):
+    """Horizontal stacked bar in data coords (used for HLA allele freq Fig 8A).
+
+    Args:
+        x, y     : bar position (x = 0 baseline usually, y = row index)
+        h_data   : (not used - use y_width)
+        seg_vals : list of segment lengths (in data x units)
+        seg_colors : list of RGBColor matching seg_vals
+    """
+    cx = 0.0
+    for v, col in zip(seg_vals, seg_colors):
+        if v <= 0: continue
+        panel.rect_data(cx, y - y_width/2, cx + v, y + y_width/2,
+                        fill=col, line=col, line_width_pt=0.4)
+        cx += v
+    return cx
+
+
 def make_prs_blank():
     prs = Presentation()
     prs.slide_width  = Inches(10.0)
