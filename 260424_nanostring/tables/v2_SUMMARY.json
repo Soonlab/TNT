@@ -1,0 +1,46 @@
+{
+  "pre": {
+    "total": 23,
+    "good_gt_bad_direction": 23,
+    "hits_good_gt_bad_1s_P_le_0p05": [
+      "GC_TF",
+      "Ayers_TIS",
+      "IFNg_6",
+      "IFNg_10_Ayers",
+      "CD8_cytotoxic",
+      "M1_macro"
+    ],
+    "hits_bad_gt_good_1s_P_le_0p05": []
+  },
+  "post": {
+    "total": 23,
+    "good_gt_bad_direction": 21,
+    "hits_good_gt_bad_1s_P_le_0p05": [
+      "HLA_I_axis",
+      "IFNg_6",
+      "IFNg_10_Ayers",
+      "HLA_I_machinery_narrow"
+    ],
+    "hits_bad_gt_good_1s_P_le_0p05": []
+  },
+  "delta": {
+    "total": 23,
+    "good_gt_bad_direction": 14,
+    "hits_good_gt_bad_1s_P_le_0p05": [],
+    "hits_bad_gt_good_1s_P_le_0p05": []
+  },
+  "phenotypes": {
+    "inflamed_ineffective": 3,
+    "inflamed_effective": 2,
+    "cold_effective": 1
+  },
+  "inflamed_ineffective_subjects": [
+    11,
+    13,
+    10
+  ],
+  "inflamed_effective_subjects": [
+    4,
+    2
+  ]
+}
