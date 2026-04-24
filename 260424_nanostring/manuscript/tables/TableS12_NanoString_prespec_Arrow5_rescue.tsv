@@ -1,0 +1,11 @@
+tier	test	good_median	bad_median	good_mean	bad_mean	direction	MW_1sP_good_gt_bad	MW_2sP	Wilcoxon_good_2sP	Wilcoxon_bad_2sP
+Primary	P1_CXCL13	1.242	2.078	0.516	1.111	bad>good	0.8	0.7	0.5	0.5
+Primary	P2_TLS_8	0.537	0.745	0.926	0.846	good>bad	0.8	0.7	0.25	0.25
+Primary	P3_Plasma_proxy	0.121	0.673	0.331	0.456	bad>good	0.65	1	0.75	0.75
+Primary	P4_GC_TF	1.138	1.586	1.055	1.306	bad>good	0.8	0.7	0.25	0.25
+Secondary S1-S3	S1_Naive_B	-0.019	1.197	-0.009	1.176	bad>good	0.95	0.2	0.75	0.25
+Secondary S1-S3	S2_Memory_B	-0.489	0.094	0.029	0.382	bad>good	0.8	0.7	1	0.75
+Secondary S1-S3	S3_BAFF_APRIL	0.146	0.551	0.465	0.777	bad>good	0.8	0.7	0.75	0.5
+Tertiary cascade	T1_HLAII_vs_Plasma					-			0.717	0.109
+Tertiary cascade	T2_CD8exh_vs_TLS8					-			0.82	0.045
+Tertiary cascade	T3_HLAI_vs_Tcell					-			0.49	0.324
