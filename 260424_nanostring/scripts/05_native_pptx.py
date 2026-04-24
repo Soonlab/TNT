@@ -250,22 +250,25 @@ def build_figS22():
     vmin = -vmax
 
     s = blank_slide(prs)
-    add_textbox(s, 0.5, 0.15, 9.0, 0.3,
-                 "A  Pre/post/Δ composite heatmap (good − bad)", size=13, bold=True)
-    add_textbox(s, 0.5, 0.50, 9.0, 0.25,
-                 "Star ★ = one-sided MW P ≤ 0.05 (ceiling at n=3 vs 3). Dot · = P ≤ 0.10.",
+    add_textbox(s, 0.3, 0.15, 9.4, 0.3,
+                 "A  Pre/post/Δ composite heatmap (good − bad) + directional evidence per timepoint",
+                 size=13, bold=True)
+    add_textbox(s, 0.3, 0.50, 9.4, 0.25,
+                 "Left: good − bad composite z (star ★ = one-sided MW P ≤ 0.05 ceiling, dot · = P ≤ 0.10). "
+                 "Right: -log₁₀ P per timepoint; dashed red = P = 0.05.",
                  size=8, color=GREY, italic=True)
     n_rows = len(order)
     col_labels = ["pre", "post", "Δ"]
-    # Heatmap origin
-    hx0 = 3.4; hy0 = 0.95
-    cell_w = 0.8; cell_h = min(0.21, 4.6 / n_rows)
+    col_colors = {"pre": BLUE, "post": GREY, "Δ": GOLD}
+    # Heatmap origin (shifted left to make room for bar sub-panel)
+    hx0 = 2.6; hy0 = 0.95
+    cell_w = 0.55; cell_h = min(0.21, 4.6 / n_rows)
     # col headers
     for j, cl in enumerate(col_labels):
         add_textbox(s, hx0 + j * cell_w, hy0 - 0.3, cell_w, 0.25,
                      cl, size=10, bold=True, align="center")
     for i, sig in enumerate(order):
-        add_textbox(s, hx0 - 2.7, hy0 + i * cell_h - 0.02, 2.6, cell_h + 0.02,
+        add_textbox(s, hx0 - 2.3, hy0 + i * cell_h - 0.02, 2.2, cell_h + 0.02,
                      sig, size=7, align="right", anchor="middle")
         for j in range(3):
             v = M[i, j]
@@ -273,64 +276,156 @@ def build_figS22():
             add_rect(s, hx0 + j * cell_w, hy0 + i * cell_h,
                       cell_w, cell_h, fill=fill, line=True, line_color=GREY,
                       line_width_pt=0.2)
-            # text
             mark = "★" if P[i, j] <= 0.05 else ("·" if P[i, j] <= 0.10 else "")
-            val = f"{v:+.2f} {mark}".strip()
+            val = f"{v:+.2f}{mark}"
             txt_col = WHITE if abs(v) > vmax * 0.6 else INK
             add_textbox(s, hx0 + j * cell_w, hy0 + i * cell_h, cell_w, cell_h,
-                         val, size=6, color=txt_col, align="center", anchor="middle")
-    # colorbar (vertical strip)
-    cbx = hx0 + 3 * cell_w + 0.4; cby = hy0
-    cbh = n_rows * cell_h; cbw = 0.25
+                         val, size=5.5, color=txt_col, align="center", anchor="middle")
+    # colorbar (vertical strip, placed just right of heatmap)
+    cbx = hx0 + 3 * cell_w + 0.15; cby = hy0
+    cbh = n_rows * cell_h; cbw = 0.18
     n_steps = 40
     for k in range(n_steps):
         v = vmin + (vmax - vmin) * k / (n_steps - 1)
         add_rect(s, cbx, cby + cbh - (k + 1) * cbh / n_steps,
                   cbw, cbh / n_steps, fill=interp_color(v, vmin, vmax),
                   line=False)
-    add_textbox(s, cbx, cby - 0.3, cbw + 0.6, 0.25,
-                 f"+{vmax:.2f}", size=7, color=GREY)
-    add_textbox(s, cbx, cby + cbh + 0.04, cbw + 0.6, 0.25,
-                 f"{-vmax:.2f}", size=7, color=GREY)
-    add_textbox(s, cbx + cbw + 0.1, cby + cbh / 2 - 0.12, 1.0, 0.25,
-                 "good − bad (z)", size=7, color=GREY)
+    add_textbox(s, cbx - 0.15, cby - 0.22, cbw + 0.5, 0.18,
+                 f"+{vmax:.2f}", size=6, color=GREY, align="center")
+    add_textbox(s, cbx - 0.15, cby + cbh + 0.02, cbw + 0.5, 0.18,
+                 f"{-vmax:.2f}", size=6, color=GREY, align="center")
 
-    # --- Panel B: Pre waterfall ---
+    # RIGHT sub-panel: -log10 P grouped bar per composite per timepoint
+    import math as _m
+    bx0 = cbx + cbw + 0.4          # bar origin x (zero point)
+    by0 = hy0                       # same y as heatmap
+    bw_total = 3.4                  # total width of bar sub-panel
+    # compute -log10 P (cap small P at 1e-3 for display)
+    logP = np.zeros_like(P)
+    for i in range(n_rows):
+        for j in range(3):
+            pp = max(P[i, j], 1e-3)
+            logP[i, j] = -_m.log10(pp)
+    lmax = max(1.5, float(logP.max()) * 1.1)
+    # x-axis: from 0 to lmax mapped to [bx0, bx0 + bw_total]
+    def scale_x(v):
+        return bx0 + (v / lmax) * bw_total
+    # axis box: vertical zero line + top/bottom spines
+    add_line(s, bx0, by0 - 0.05, bx0, by0 + n_rows * cell_h + 0.05,
+              color=LINE, width_pt=0.6)
+    add_line(s, bx0, by0 + n_rows * cell_h, bx0 + bw_total,
+              by0 + n_rows * cell_h, color=LINE, width_pt=0.6)
+    # P=0.05 reference line (at -log10(0.05) = 1.301)
+    ref_x = scale_x(1.301)
+    add_line(s, ref_x, by0 - 0.05, ref_x, by0 + n_rows * cell_h + 0.05,
+              color=BAD, width_pt=0.6, dash=True)
+    add_textbox(s, ref_x - 0.45, by0 - 0.25, 0.9, 0.18,
+                 "P = 0.05", size=6, color=BAD, align="center", italic=True)
+    # x-axis ticks at 0, 0.5, 1, 1.5, 2, 3
+    for tv in (0.0, 1.0, 2.0, 3.0):
+        if tv <= lmax * 1.01:
+            tx = scale_x(tv)
+            add_line(s, tx, by0 + n_rows * cell_h,
+                      tx, by0 + n_rows * cell_h + 0.07,
+                      color=LINE, width_pt=0.4)
+            add_textbox(s, tx - 0.15, by0 + n_rows * cell_h + 0.08, 0.3, 0.18,
+                         f"{tv:.0f}" if tv == int(tv) else f"{tv:.1f}",
+                         size=6, color=GREY, align="center")
+    add_textbox(s, bx0 + bw_total / 2 - 0.9, by0 + n_rows * cell_h + 0.30, 1.8, 0.2,
+                 "-log₁₀ P (good > bad, 1-sided)",
+                 size=7, color=GREY, align="center")
+    # 3 mini-bars per row (pre, post, Δ) with height = cell_h / 3.3
+    sub_h = cell_h / 3.3
+    for i in range(n_rows):
+        for j in range(3):
+            lab = col_labels[j]
+            col = col_colors[lab]
+            y_b = by0 + i * cell_h + j * sub_h + 0.02
+            w_b = scale_x(logP[i, j]) - bx0
+            if w_b < 0.02:
+                w_b = 0.02
+            add_rect(s, bx0, y_b, w_b, sub_h - 0.02,
+                      fill=col, line=True, line_color=LINE, line_width_pt=0.15)
+    # small legend for bar colors (below x-axis label)
+    lx = bx0
+    ly = by0 + n_rows * cell_h + 0.55
+    for lab in col_labels:
+        add_rect(s, lx, ly, 0.16, 0.10, fill=col_colors[lab], line=True,
+                  line_color=LINE, line_width_pt=0.2)
+        add_textbox(s, lx + 0.18, ly - 0.03, 0.45, 0.16, lab,
+                     size=6.5, color=INK, align="left")
+        lx += 0.68
+    # label the heatmap colorbar axis separately (left of the bar sub-panel)
+    add_textbox(s, cbx - 0.05, cby + cbh + 0.30, cbw + 0.6, 0.2,
+                 "good − bad (z)", size=6.5, color=GREY, align="center")
+
+    # --- Panel B: Pre waterfall (with x-axis ticks + explicit P per composite) ---
     s = blank_slide(prs)
     add_textbox(s, 0.5, 0.15, 9.0, 0.3,
                  "B  Pre-treatment direction waterfall — 23/23 good > bad",
                  size=13, bold=True)
     add_textbox(s, 0.5, 0.50, 9.0, 0.25,
-                 "Six composites reach ceiling P = 0.05 (Ayers TIS, IFN-γ 6/10, CD8 cytotoxic, M1 macrophage, GC-TF).",
+                 "Six composites reach ceiling P = 0.05 (Ayers TIS, IFN-γ 6/10, CD8 cytotoxic, M1 macrophage, GC-TF). "
+                 "Value axis ticks at 0.2 increments; P from one-sided MW, 3 vs 3 ceiling = 0.050.",
                  size=8, color=GREY, italic=True)
-    # bar axis 1x: use full width
-    bx0 = 3.5; by0 = 0.95; bh = 0.19
-    bar_len_px = 4.0
+    bx0 = 3.3; by0 = 0.95; bh = 0.19
+    bar_len_px = 3.2   # tighter to leave room for explicit P label
     bar_max = max(abs(pre_delta.min()), abs(pre_delta.max()))
+    # round bar_max to nearest 0.2 upward for clean ticks
+    bar_max_r = np.ceil(bar_max / 0.2) * 0.2
     zero_x = bx0
-    add_line(s, zero_x, by0 - 0.1, zero_x, by0 + n_rows * bh + 0.1,
+
+    # draw x-axis (horizontal) with ticks
+    axis_y = by0 + n_rows * bh + 0.05
+    add_line(s, zero_x - bar_len_px, axis_y, zero_x + bar_len_px, axis_y,
               color=LINE, width_pt=0.6)
+    # ticks every 0.2 on both sides of zero
+    tick_vals = []
+    k = 0.0
+    while k <= bar_max_r + 1e-9:
+        if k > 0:
+            tick_vals.append(k); tick_vals.append(-k)
+        else:
+            tick_vals.append(0.0)
+        k += 0.2
+    for tv in sorted(set(tick_vals)):
+        tx = zero_x + (tv / bar_max_r) * bar_len_px
+        add_line(s, tx, axis_y, tx, axis_y + 0.06, color=LINE, width_pt=0.4)
+        add_textbox(s, tx - 0.22, axis_y + 0.07, 0.44, 0.18,
+                     f"{tv:+.1f}" if tv != 0 else "0",
+                     size=6, color=GREY, align="center")
+
+    # vertical zero line
+    add_line(s, zero_x, by0 - 0.05, zero_x, axis_y,
+              color=LINE, width_pt=0.6)
+
     for i, sig in enumerate(order):
         v = pre_delta[i]
         p = pre_mw.loc[sig, "MW_P_1s_good_gt_bad"]
-        add_textbox(s, bx0 - 2.9, by0 + i * bh - 0.02, 2.7, bh + 0.04,
+        add_textbox(s, bx0 - 2.8, by0 + i * bh - 0.02, 2.6, bh + 0.04,
                      sig, size=7, align="right", anchor="middle")
-        bar_w = abs(v) / bar_max * bar_len_px
+        bar_w = abs(v) / bar_max_r * bar_len_px
         color = GOOD if v > 0 else BAD
         bx_start = zero_x if v > 0 else zero_x - bar_w
         add_rect(s, bx_start, by0 + i * bh + 0.02, bar_w, bh - 0.05,
                   fill=color, line=True, line_color=LINE, line_width_pt=0.25)
-        star = " ★" if p <= 0.05 else ""
-        tx = bx_start + bar_w + 0.05 if v > 0 else bx_start - 0.4
-        add_textbox(s, tx, by0 + i * bh - 0.02, 0.7, bh + 0.04,
-                     f"{v:+.2f}{star}", size=6.5,
-                     color=(GOLD if star else GREY),
-                     align=("left" if v > 0 else "right"), anchor="middle")
-    add_textbox(s, zero_x - 2.0, by0 + n_rows * bh + 0.1, 4.0, 0.25,
+        # explicit " +value   P=0.05 ★" to the right of every bar
+        star = " ★" if p <= 0.05 else (" ·" if p <= 0.10 else "")
+        label_col = GOLD if p <= 0.05 else (INK if p <= 0.10 else GREY)
+        label_bold = (p <= 0.05)
+        add_textbox(s, zero_x + bar_len_px + 0.1, by0 + i * bh - 0.02,
+                     1.4, bh + 0.04,
+                     f"{v:+.2f}   P={p:.2f}{star}",
+                     size=6.5, bold=label_bold, color=label_col,
+                     align="left", anchor="middle", family="Courier New")
+
+    add_textbox(s, zero_x - bar_len_px / 2 - 0.6, axis_y + 0.28, 2.4, 0.22,
                  "good − bad (composite z)", size=9, align="center")
-    add_textbox(s, zero_x - 2.0, by0 + n_rows * bh + 0.4, 4.0, 0.25,
-                 "★ = one-sided MW P ≤ 0.05 (ceiling)", size=7.5,
-                 color=GOLD, align="center", italic=True)
+    # legend note (bottom strip)
+    add_textbox(s, 0.5, axis_y + 0.58, 9.0, 0.2,
+                 "★ = one-sided MW P ≤ 0.05 (3-vs-3 ceiling) · · = P ≤ 0.10 · "
+                 "P-values tabulated per composite in Courier at right of each bar.",
+                 size=7.5, color=GREY, align="center", italic=True)
 
     # --- Panel C: canonical signatures ---
     build_six_panel_canonical(prs, slide_title="C  Regulatory-grade signatures")
