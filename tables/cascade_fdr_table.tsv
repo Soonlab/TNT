@@ -1,0 +1,15 @@
+feature	raw_p	manuscript_section	BH_q	significant_at_0.10
+Treg_delta (paired)	0.026	3.8	0.1899	False
+IGH_n_delta (paired)	0.031	3.8	0.1899	False
+SBS5_delta (good vs bad MW)	0.0407	3.5	0.1899	False
+MHC_II_delta (paired)	0.065	3.8	0.2072	False
+MHC_II_preCRT (ssGSEA)	0.074	3.3/3.8	0.2072	False
+CD8_exhaustion_delta (paired)	0.093	3.8	0.217	False
+missense_delta (good vs bad MW)	0.2008	3.5	0.4017	False
+neoantigen_sites_delta (MW)	0.2468	3.6	0.4318	False
+TRB_shannon_delta	0.3095	3.8	0.4333	False
+TRA_shannon_delta	0.3095	3.8	0.4333	False
+IGL_n_delta (paired)	0.3939	3.8	0.5	False
+neoantigen_binders_delta (MW)	0.4286	3.6	0.5	False
+IGK_n_delta (paired)	0.4848	3.8	0.5221	False
+HLA_LOH prevalence Fisher (pre-CRT)	0.673	3.7	0.673	False

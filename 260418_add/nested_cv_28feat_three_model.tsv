@@ -1,0 +1,4 @@
+model	feature_set	AUC	CI_low	CI_high	protocol
+LASSO	28-feature reference	0.7157	0.5238	0.8824	nested LOOCV (outer 35-fold + inner 5-fold + bootstrap 2000)
+ElasticNet	28-feature reference	0.7451	0.5633	0.8947	nested LOOCV (outer 35-fold + inner 5-fold + bootstrap 2000)
+RandomForest	28-feature reference	0.5752	0.3758	0.7664	nested LOOCV (outer 35-fold + inner 5-fold + bootstrap 2000)

@@ -1,0 +1,7 @@
+baseline_feature	cascade_feature	mechanistic_rationale	baseline_good_mean	baseline_bad_mean	baseline_direction	cascade_good_mean	cascade_bad_mean	cascade_direction	concordant
+DNA Double-Strand Break Repair R-HSA-5693532	SBS5_delta	DSB repair → radiation-induced SBS5 mutation clearance	0.827	0.8036	good>bad	-81.3333	-29.3333	bad>good	0.0
+DNA Double-Strand Break Repair R-HSA-5693532	neo_binders_delta	DSB repair → cytotoxic clearance → neoantigen depletion	0.827	0.8036	good>bad	-346.25	-164.2	bad>good	0.0
+E2F Targets	missense_delta	proliferation → mutation accumulation rate (TMB ≈ missense count)	1.0249	0.9887	good>bad	-69.0	-12.6667	bad>good	0.0
+CD8_cytotoxic	CD8_exhaustion_delta	cytotoxic engagement → chronic antigen → exhaustion	-0.2734	-0.1836	bad>good	0.9658	0.1685	good>bad	0.0
+E2F Targets	Treg_delta	proliferation-driven antigen release → Treg infiltration	1.0249	0.9887	good>bad	1.1586	0.1838	good>bad	1.0
+__SIGN_TEST__		one-sided binomial(p=0.5), H1 p>0.5						1/5 concordant	0.96875

@@ -1,0 +1,8 @@
+Signature	Genes in signature (example)	n_cohorts	Concordant (Δ>0)	Stouffer Z	p_meta	Significance
+CD8_cytotoxic	CD8A/B, GZMA/B/H/K, PRF1, IFNG, NKG7, GNLY, CXCL9/10/11, TBX21, EOMES	9	8 / 9	+2.74	0.006	** (P<0.01)
+Tcell_infiltration	CD3D/E/G, CD2, CD4, CD8A/B, LCK, ZAP70, ITK	9	8 / 9	+1.78	0.075	trend (P<0.15)
+Bcell_infiltration	CD19, MS4A1, CD79A/B, CD22, TCL1A, FCRL5, BLK, FCER2	9	7 / 9	+1.56	0.118	trend (P<0.15)
+Tumor_cellcycle	MKI67, TOP2A, MCM2/5, CCNB1/B2, CDK1, PCNA, CENPF, BUB1, PLK1, AURKA/B	9	5 / 9	+1.31	0.191	ns
+DSB_HDR_repair	BRCA1/2, RAD51, PALB2, ATM/ATR, CHEK1/2, FANCA/D2/I/L, MRE11, RAD50	9	5 / 9	+1.23	0.219	ns
+E2F_MYC_cellcycle	E2F1/2/3, MYC, MCM3/4/6/7, CCNE1/E2, CDK2/4/6, CDC20/25A	9	5 / 9	+0.69	0.489	ns
+EMT	VIM, CDH2, SNAI1/2, TWIST1/2, ZEB1/2, FN1, MMP2/3/9, COL1A1/1A2/3A1, FAP, ACTA2	9	4 / 9	-1.03	0.303	ns

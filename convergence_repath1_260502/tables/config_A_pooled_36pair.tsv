@@ -1,0 +1,37 @@
+baseline_feature	cascade_feature	n	spearman_r	spearman_P	pearson_r	pearson_P	BH_q_spearman	BH_q_pearson
+Myc Targets V2	IGH_n_delta	12	0.559	0.0586	0.444	0.1477	0.8071	0.9233
+DNA Double-Strand Break Repair R-HSA-5693532	IGH_n_delta	12	0.545	0.0666	0.472	0.1215	0.8071	0.9233
+DNA Repair R-HSA-73894	IGH_n_delta	12	0.538	0.0709	0.38	0.2236	0.8071	0.9233
+frac_amp	Treg_delta	12	-0.495	0.1017	-0.528	0.0779	0.8071	0.9233
+MHC_II	CD8_cytotoxic_delta	12	-0.483	0.1121	-0.547	0.0656	0.8071	0.9233
+MSI_pct	Treg_delta	11	0.447	0.1679	0.425	0.192	0.8242	0.9233
+DNA Double-Strand Break Repair R-HSA-5693532	Treg_delta	12	0.392	0.2081	0.211	0.51	0.8242	0.9233
+MHC_II	MHC_II_delta	12	-0.364	0.2453	-0.665	0.0184	0.8242	0.6624
+MSI_pct	CD8_cytotoxic_delta	11	-0.373	0.259	-0.271	0.4194	0.8242	0.9233
+DNA Repair R-HSA-73894	Treg_delta	12	0.35	0.2652	0.069	0.831	0.8242	0.9233
+Myc Targets V2	Treg_delta	12	0.322	0.3079	0.154	0.6318	0.8242	0.9233
+HDR Thru Homologous Recombination (HRR) R-HSA-5685942	IGH_n_delta	12	0.315	0.3191	0.304	0.3374	0.8242	0.9233
+G2-M Checkpoint	IGH_n_delta	12	0.308	0.3306	0.354	0.2589	0.8242	0.9233
+E2F Targets	IGH_n_delta	12	0.308	0.3306	0.35	0.2646	0.8242	0.9233
+DNA Double-Strand Break Repair R-HSA-5693532	MHC_II_delta	12	0.294	0.3541	0.214	0.5046	0.8242	0.9233
+DNA Repair R-HSA-73894	MHC_II_delta	12	0.287	0.3663	0.124	0.7003	0.8242	0.9233
+Myc Targets V2	MHC_II_delta	12	0.245	0.4433	0.236	0.46	0.8958	0.9233
+MSI_pct	IGH_n_delta	11	0.224	0.5086	0.251	0.4569	0.8958	0.9233
+HDR Thru Homologous Recombination (HRR) R-HSA-5685942	Treg_delta	12	0.189	0.5567	0.044	0.8917	0.8958	0.9233
+frac_amp	MHC_II_delta	12	-0.183	0.569	-0.155	0.6306	0.8958	0.9233
+MHC_II	IGH_n_delta	12	0.175	0.5868	0.233	0.4659	0.8958	0.9233
+frac_amp	CD8_cytotoxic_delta	12	0.175	0.587	-0.098	0.7616	0.8958	0.9233
+E2F Targets	Treg_delta	12	0.154	0.6331	0.072	0.8243	0.8958	0.9233
+G2-M Checkpoint	Treg_delta	12	0.154	0.6331	0.111	0.7316	0.8958	0.9233
+MSI_pct	MHC_II_delta	11	0.149	0.6618	0.02	0.9534	0.8958	0.9534
+HDR Thru Homologous Recombination (HRR) R-HSA-5685942	CD8_cytotoxic_delta	12	0.126	0.6967	-0.059	0.8557	0.8958	0.9233
+E2F Targets	CD8_cytotoxic_delta	12	0.126	0.6967	-0.076	0.8138	0.8958	0.9233
+G2-M Checkpoint	CD8_cytotoxic_delta	12	0.126	0.6967	-0.042	0.8977	0.8958	0.9233
+MHC_II	Treg_delta	12	-0.091	0.7787	-0.219	0.4934	0.9326	0.9233
+HDR Thru Homologous Recombination (HRR) R-HSA-5685942	MHC_II_delta	12	0.091	0.7787	0.093	0.7728	0.9326	0.9233
+frac_amp	IGH_n_delta	12	-0.079	0.8071	-0.043	0.8946	0.9326	0.9233
+DNA Double-Strand Break Repair R-HSA-5693532	CD8_cytotoxic_delta	12	-0.07	0.829	-0.091	0.779	0.9326	0.9233
+Myc Targets V2	CD8_cytotoxic_delta	12	0.028	0.9312	-0.044	0.8913	0.9755	0.9233
+E2F Targets	MHC_II_delta	12	0.021	0.9484	0.061	0.8513	0.9755	0.9233
+G2-M Checkpoint	MHC_II_delta	12	0.021	0.9484	0.108	0.7391	0.9755	0.9233
+DNA Repair R-HSA-73894	CD8_cytotoxic_delta	12	-0.007	0.9828	-0.152	0.6374	0.9828	0.9233

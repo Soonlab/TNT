@@ -1,0 +1,10 @@
+feature	n_good	n_bad	good_delta_median	good_95CI	bad_delta_median	bad_95CI	diff_median_good_minus_bad	diff_95CI	diff_CI_excludes_zero	MW_p	evidence_level
+CD8_exhaustion	6	6	0.998	[+0.23, +1.62]	-0.098	[-0.72, +0.24]	1.06	[-0.46, +1.95]	0	0.093	exploratory (CI spans 0)
+IGH_n	6	6	1424.5	[+0.00, +5992.00]	7.5	[-1396.00, +3556.00]	1572.0	[-2840.00, +6988.00]	0	0.24	exploratory (CI spans 0)
+MHC_II	6	6	1.226	[+0.54, +1.92]	0.363	[-1.05, +1.03]	0.847	[-0.08, +2.42]	0	0.065	exploratory (CI spans 0)
+SBS5	7	7	-76.0	[-145.00, -64.00]	-29.0	[-65.00, +9.00]	-52.0	[-148.00, +1.00]	0	0.041	exploratory (CI spans 0)
+TRB_shannon	6	6	0.335	[-0.55, +0.97]	0.011	[-0.92, +0.51]	0.433	[-0.35, +1.44]	0	0.31	exploratory (CI spans 0)
+Treg	6	6	1.256	[+0.34, +1.76]	0.028	[-0.43, +0.88]	1.209	[+0.06, +1.97]	1	0.026	robust (CI excl. 0)
+missense	5	7	-83.0	[-114.00, +18.00]	-1.0	[-38.00, +1.00]	-77.0	[-113.00, +40.00]	0	0.626	exploratory (CI spans 0)
+neo_binders	5	6	-312.0	[-626.00, -123.00]	-99.5	[-285.50, -51.00]	-212.5	[-526.50, +177.00]	0	0.429	exploratory (CI spans 0)
+neo_sites	5	6	-59.0	[-88.00, -26.00]	-16.5	[-45.00, -6.00]	-42.5	[-76.00, +31.00]	0	0.247	exploratory (CI spans 0)

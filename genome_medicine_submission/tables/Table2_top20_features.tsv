@@ -1,0 +1,21 @@
+Feature	n good	n bad	Median good	Median bad	Δ (good − bad)	MW P	BH q
+DNA Double-Strand Break Repair R-HSA-5693532	17	16	0.832	0.803	0.03	0.007283	0.145
+Myc Targets V2	17	16	1.07	1.041	0.029	0.0183	0.145
+HDR Thru Homologous Recombination (HRR) R-HSA-5685942	17	16	0.869	0.831	0.038	0.02016	0.145
+DNA Repair R-HSA-73894	17	16	0.881	0.858	0.023	0.02016	0.145
+G2-M Checkpoint	17	16	0.999	0.958	0.041	0.03209	0.145
+CD8_proliferation	17	16	0.838	0.341	0.497	0.03509	0.145
+E2F Targets	17	16	1.035	0.99	0.046	0.03509	0.145
+MHC_II	17	16	-0.46	0.081	-0.542	0.07457	0.27
+MSI_pct	16	12	0.0	0.0	0.0	0.1446	0.419
+Stemness_mRNAsi_proxy	17	16	0.127	-0.012	0.139	0.1446	0.419
+TGF-beta Signaling	17	16	0.938	0.942	-0.004	0.1655	0.436
+Epithelial Mesenchymal Transition	17	16	0.809	0.843	-0.034	0.2417	0.563
+Hypoxia	17	16	0.844	0.852	-0.008	0.2719	0.563
+Hypoxia_Buffa	17	16	0.398	0.29	0.108	0.2879	0.563
+frac_amp	18	17	0.0	0.0	0.0	0.2912	0.563
+EMT_Mak	17	16	-0.24	-0.087	-0.153	0.3583	0.649
+TGFb_Mariathasan	17	16	-0.174	-0.152	-0.021	0.4824	0.803
+frac_del	18	17	0.07	0.106	-0.036	0.4987	0.803
+IFNg_Ayers_18	17	16	-0.139	-0.048	-0.091	0.6268	0.957
+MMR_prop	18	17	0.088	0.092	-0.004	0.7202	0.987
