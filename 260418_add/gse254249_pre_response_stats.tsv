@@ -1,8 +1,0 @@
-signature	thread	n_good	n_bad	mean_good	mean_bad	delta	mw_p	expected_dir	concordant
-DSB_HDR_repair	1	1	2	0.431	0.43	0.001	NA	1	NA
-E2F_MYC_cellcycle	1	1	2	0.384	0.118	0.266	NA	1	NA
-Tumor_cellcycle	1	1	2	0.102	0.22	-0.118	NA	1	NA
-EMT	1	1	2	-0.425	0.133	-0.558	NA	-1	NA
-CD8_cytotoxic	2	1	2	0.291	0.764	-0.473	NA	1	NA
-Tcell_infiltration	2	1	2	1.142	0.485	0.657	NA	1	NA
-Bcell_infiltration	2	1	2	1.295	-0.103	1.398	NA	1	NA

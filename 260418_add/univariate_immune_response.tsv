@@ -1,7 +1,0 @@
-feature	n_good	n_bad	median_good	median_bad	delta	mw_U	mw_p_2sided
-CD8_cytotoxic	17	16	-0.007	-0.139	0.132	142.0	0.843
-Tcell_infiltration	17	16	-0.188	-0.22	0.031	134.0	0.9569
-Bcell_infiltration	17	16	0.297	-0.137	0.433	155.0	0.5052
-CD8_proliferation	17	16	0.838	0.341	0.497	195.0	0.0351
-CD8_activation	17	16	-0.059	-0.319	0.259	141.0	0.8712
-MHC_II	17	16	-0.46	0.081	-0.542	86.0	0.0746

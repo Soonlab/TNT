@@ -1,7 +1,0 @@
-subject	response_bin	dAyers_TIS	dTeff	inflamed	phenotype
-11	bad	0.22763027146661907	-0.21394920743280066	True	inflamed_ineffective
-13	bad	0.688076702221341	1.7150285608223834	True	inflamed_ineffective
-10	bad	0.8934186097243096	-0.028495789179541098	True	inflamed_ineffective
-14	good	-0.3175935460751344	-0.23240800377651297	False	cold_effective
-4	good	0.5477892180552438	0.0003032180662826123	True	inflamed_effective
-2	good	1.956512868671354	1.957500464945041	True	inflamed_effective

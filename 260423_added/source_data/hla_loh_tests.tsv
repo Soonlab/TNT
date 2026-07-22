@@ -1,3 +1,0 @@
-call	good_pos	good_neg	bad_pos	bad_neg	good_freq	bad_freq	OR	fisher_p
-strict any-LOH	2	14	0	12	0.125	0.0	inf	0.49206349206349204
-lite any-LOH	4	12	2	10	0.25	0.16666666666666666	1.6666666666666667	0.6729840208101077

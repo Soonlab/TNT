@@ -1,5 +1,0 @@
-Fig5 panel statistics (Mann-Whitney U two-sided)
-A pre n_nonsyn good vs bad:              P = 0.9868
-B pre n_sites_with_strong good vs bad:   P = 0.5458
-C delta_binders good vs bad:             P = 0.4286
-D HLA LOH clone clearance subj 3 & 4: descriptive (paired PR->PO)

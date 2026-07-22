@@ -1,3 +1,0 @@
-model	feature_set	n_features	AUC	CI_low	CI_high
-LASSO	immune_only_5feat	6	0.5033	0.3007	0.7007
-ElasticNet	immune_only_5feat	6	0.4542	0.2647	0.6536

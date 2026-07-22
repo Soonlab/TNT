@@ -1,8 +1,0 @@
-thread	signature	n_cohorts	n_total	Z	p_meta	cohorts	akiyoshi	5cohort_only_Z	5cohort_only_p
-Thread1_tumor_intrinsic	DSB_HDR_repair	5	518	3.17	0.0015	GSE35452,GSE45404,GSE56699,GSE133057,GSE87211	not applicable (paper has no Thread 1 effect sizes)		
-Thread1_tumor_intrinsic	E2F_MYC_cellcycle	5	518	2.79	0.0053	GSE35452,GSE45404,GSE56699,GSE133057,GSE87211	not applicable (paper has no Thread 1 effect sizes)		
-Thread1_tumor_intrinsic	Tumor_cellcycle	5	518	3.21	0.0013	GSE35452,GSE45404,GSE56699,GSE133057,GSE87211	not applicable (paper has no Thread 1 effect sizes)		
-Thread1_tumor_intrinsic	EMT	5	518	1.61	0.1064	GSE35452,GSE45404,GSE56699,GSE133057,GSE87211	not applicable (paper has no Thread 1 effect sizes)		
-Thread2_immune	CD8_cytotoxic	6	816	3.29	0.001	GSE35452,GSE45404,GSE56699,GSE133057,GSE87211,GSE216616(Akiyoshi-paper)	cytolytic_activity P=0.005 added (eFig 4B), Z=+2.81 weight=17.3	2.0	0.0456
-Thread2_immune	Tcell_infiltration	5	518	0.84	0.3993	GSE35452,GSE45404,GSE56699,GSE133057,GSE87211	paper does not report direct equivalent		
-Thread2_immune	Bcell_infiltration	5	518	0.28	0.7812	GSE35452,GSE45404,GSE56699,GSE133057,GSE87211	paper does not report direct equivalent		

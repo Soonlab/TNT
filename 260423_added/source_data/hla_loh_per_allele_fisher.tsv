@@ -1,3 +1,0 @@
-call	good_pos	good_total	bad_pos	bad_total	good_pct	bad_pct	OR	fisher_p
-LOHHLA-lite	7	42	2	34	16.666666666666664	5.88235294117647	3.2	0.17576476147710832
-strict	3	42	0	34	7.142857142857142	0.0	inf	0.24842105263157893

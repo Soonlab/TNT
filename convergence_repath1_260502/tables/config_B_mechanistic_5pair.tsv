@@ -1,6 +1,0 @@
-baseline_feature	cascade_feature	n	mechanistic_rationale	spearman_r_plain	spearman_P_plain	partial_r_groupadj	partial_P_groupadj	BH_q_plain	BH_q_groupadj
-DNA Double-Strand Break Repair R-HSA-5693532	SBS5_delta	12	DSB repair → radiation-induced SBS5 mutation clearance	-0.595	0.0411	-0.365	0.2439	0.2055	0.7394
-DNA Double-Strand Break Repair R-HSA-5693532	neo_binders_delta	9	DSB repair → cytotoxic clearance → neoantigen depletion	-0.417	0.2646	-0.249	0.5187	0.441	0.7394
-E2F Targets	missense_delta	10	proliferation → mutation accumulation rate (TMB ≈ missense count)	-0.438	0.2058	-0.312	0.3797	0.441	0.7394
-CD8_cytotoxic	CD8_exhaustion_delta	12	cytotoxic engagement → chronic antigen → exhaustion	-0.126	0.6967	-0.149	0.645	0.6967	0.7394
-E2F Targets	Treg_delta	12	proliferation-driven antigen release → Treg infiltration	0.154	0.6331	-0.108	0.7394	0.6967	0.7394

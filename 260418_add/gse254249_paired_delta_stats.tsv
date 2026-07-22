@@ -1,8 +1,0 @@
-signature	thread	n_paired	mean_delta	expected_dir	n_concordant	binom_p	deltas
-DSB_HDR_repair	1	3	-0.552	-1	2	1.0	CRC15:+0.32;CRC24:-0.98;CRC25:-1.00
-E2F_MYC_cellcycle	1	3	-0.395	-1	2	1.0	CRC15:+0.11;CRC24:-0.21;CRC25:-1.09
-Tumor_cellcycle	1	3	-0.362	-1	2	1.0	CRC15:+0.46;CRC24:-0.08;CRC25:-1.46
-EMT	1	3	0.048	1	2	1.0	CRC15:+0.28;CRC24:-0.42;CRC25:+0.28
-CD8_cytotoxic	2	3	-0.828	1	1	1.0	CRC15:+0.01;CRC24:-0.99;CRC25:-1.51
-Tcell_infiltration	2	3	-1.251	1	0	0.25	CRC15:-0.86;CRC24:-0.86;CRC25:-2.03
-Bcell_infiltration	2	3	-0.633	1	2	1.0	CRC15:+0.17;CRC24:+0.17;CRC25:-2.24

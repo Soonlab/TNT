@@ -1,8 +1,0 @@
-thread	signature	n_good	n_bad	mean_good	mean_bad	delta	mw_p	expected_dir	concordant
-1	DSB_HDR_repair	0	0					1	
-1	E2F_MYC_cellcycle	0	0					1	
-1	Tumor_cellcycle	0	0					1	
-1	EMT	0	0					-1	
-2	CD8_cytotoxic	0	0					1	
-2	Tcell_infiltration	0	0					1	
-2	Bcell_infiltration	0	0					1	

@@ -73,7 +73,7 @@ fig.savefig(OUT/'SuppFig_external_forest.png', dpi=600, bbox_inches='tight')
 plt.close(fig)
 
 # ---------- Supp Fig: Meta Z-score barplot ----------
-fig, ax = plt.subplots(figsize=(4.2, 2.8))
+fig, ax = plt.subplots(figsize=(5.0, 3.0))
 meta_sorted = meta.sort_values('Z_stouffer')
 colors = [SIG_COLORS.get(s, '#888') for s in meta_sorted['signature']]
 bars = ax.barh(meta_sorted['signature'], meta_sorted['Z_stouffer'],
@@ -82,12 +82,17 @@ ax.axvline(0, color='#888', lw=0.5, ls='--')
 ax.axvline(1.96, color='#aaa', lw=0.4, ls=':')
 ax.axvline(-1.96, color='#aaa', lw=0.4, ls=':')
 ax.set_xlabel("Stouffer's Z (meta, 7 cohorts)")
-ax.set_title('Cross-cohort meta-analysis', loc='left')
+ax.set_title('Cross-cohort meta-analysis', loc='left', fontsize=9)
 ax.tick_params(length=2.5, width=0.6)
+# Put P values consistently at the positive x-axis end (outside bar) to avoid
+# overlap with y-tick labels for negative bars.
+xmax = max(abs(meta_sorted['Z_stouffer'].min()), abs(meta_sorted['Z_stouffer'].max())) + 0.5
+ax.set_xlim(-xmax, xmax)
 for bar, z, p in zip(bars, meta_sorted['Z_stouffer'], meta_sorted['p_meta_onesided']):
-    ax.text(z + (0.04 if z>=0 else -0.04), bar.get_y()+bar.get_height()/2,
-            f'P={p:.2f}', va='center',
-            ha='left' if z>=0 else 'right', fontsize=6.5, color='#222')
+    # Always annotate at right side of axis to avoid collision with bar body
+    # and y-tick labels (bars can be either direction from 0).
+    ax.text(xmax - 0.08, bar.get_y()+bar.get_height()/2,
+            f'P={p:.2f}', va='center', ha='right', fontsize=6.5, color='#222')
 fig.tight_layout()
 fig.savefig(OUT/'SuppFig_meta_zscore.pdf', bbox_inches='tight')
 fig.savefig(OUT/'SuppFig_meta_zscore.png', dpi=600, bbox_inches='tight')

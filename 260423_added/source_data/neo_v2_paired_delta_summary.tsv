@@ -1,5 +1,0 @@
-metric	label	n_good	n_bad	good_median	bad_median	good_mean	bad_mean	MW_p_twosided	wilcoxon_good_p	wilcoxon_bad_p
-delta_binders	Δ total binders	5	6	-312.0	-99.5	-301.6	-133.83333333333334	0.42857142857142855	0.125	0.0625
-delta_sites	Δ binder sites	5	6	-59.0	-16.5	-48.6	-21.666666666666668	0.24675324675324672	0.125	0.03125
-delta_strong	Δ strong binders	5	6	-17.0	-8.0	-23.6	-12.666666666666666	0.5218690919074656	0.125	0.09375
-delta_PCN	Δ PCN	5	6	-160.78	-92.474	-138.49880000000002	-91.33699999999999	0.5367965367965368	0.125	0.03125
