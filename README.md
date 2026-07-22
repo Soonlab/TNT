@@ -6,12 +6,9 @@ microsatellite-stable rectal cancer**. Patients received short-course radiothera
 with paired pre-/post-radiotherapy biopsies in a subset).
 
 Each top-level folder corresponds to a subsection of the **Methods** in the manuscript, and
-contains only the final version of the analysis code for that subsection. Figure/table/slide
-rendering code, superseded iterations, and analyses not used in the current manuscript
-(e.g., PyClone clonal-evolution, the GSE145037/GSE109057 cohorts) have been removed.
+contains only the final version of the analysis code for that subsection.
 
-The repository contains **analysis code only** — no manuscript, figures, tables, or
-sequencing data. Sequencing data are deposited under controlled access (SRA/GEO); accessions
+Sequencing data are deposited under controlled access (SRA/GEO); accessions
 are listed in the manuscript.
 
 ## Folders (mapped to Methods)
